@@ -111,6 +111,38 @@ const getIssueStatus = async (req, res) => {
 
 //3. Managerial & Admin APIs 
 //3.1 Facility Manager (Worker Management)
+// Get all workers
+exports.getWorkers = (req, res) => {
+    const workers = [
+        { id: 1, name: "Ahmed", status: "active" },
+        { id: 2, name: "Sara", status: "inactive" }
+    ];
 
+    return res.status(200).json({
+        message: "Workers fetched successfully",
+        data: workers
+    });
+};
 
+// Update worker status
+exports.updateWorkerStatus = (req, res) => {
+    const workerId = req.params.id;
+    const { status } = req.body;
+
+    if (!status) {
+        return res.status(400).json({
+            message: "Status is required"
+        });
+    }
+
+    if (status !== "active" && status !== "inactive") {
+        return res.status(400).json({
+            message: "Invalid status (must be 'active' or 'inactive')"
+        });
+    }
+
+    return res.status(200).json({
+        message: `Worker ${workerId} status updated to ${status}`
+    });
+};
 //3.2 System Admin (User Management)
