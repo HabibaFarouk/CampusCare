@@ -1,4 +1,9 @@
 const prisma = require('../prismaClient');
+
+//1. Authentication & Authorization APIs
+
+//2. Issue Management APIs
+//2.1 For Community Members (CM)
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcrypt');
 require('dotenv').config();
