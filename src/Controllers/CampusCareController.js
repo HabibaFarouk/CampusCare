@@ -10,7 +10,7 @@ const registerUser = async (req, res) => {
     try {
         const hashedPassword = await bcrypt.hash(password, 10);
 
-        const { data, error } = await supabase
+        const { data, error } = await prisma
             .from('users')
             .insert([{ name, email, password: hashedPassword, role }]);
 
@@ -24,7 +24,7 @@ const loginUser = async (req, res) => {
     const { email, password } = req.body;
 
     try {
-        const { data: user, error } = await supabase
+        const { data: user, error } = await prisma
             .from('users')
             .select('*')
             .eq('email', email)
@@ -59,7 +59,7 @@ const logoutUser = (req, res) => {
 const getMyIssues = async (req, res) => {
     try {
         // req.user is populated by your JWT middleware
-        const { data, error } = await supabase
+        const { data, error } = await prisma
             .from('tickets')
             .select('*')
             .eq('user_id', req.user.id); // Filter by logged-in user [cite: 35]
@@ -76,7 +76,7 @@ const getIssueStatus = async (req, res) => {
     const { id } = req.params;
 
     try {
-        const { data: ticket, error } = await supabase
+        const { data: ticket, error } = await prisma
             .from('tickets')
             .select('id, description, location, status, category') // [cite: 126]
             .eq('id', id)
