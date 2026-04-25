@@ -9,7 +9,7 @@ const bcrypt = require('bcrypt');
 require('dotenv').config();
 
 //1. Authentication & Authorization APIs
-const registerUser = async (req, res) => {
+exports.registerUser = async (req, res) => {
     const { name, email, password, role } = req.body;
     
     try {
@@ -25,7 +25,7 @@ const registerUser = async (req, res) => {
         return res.status(400).json({ error: err.message });
     }
 };
-const loginUser = async (req, res) => {
+exports.loginUser = async (req, res) => {
     const { email, password } = req.body;
 
     try {
@@ -53,7 +53,7 @@ const loginUser = async (req, res) => {
         return res.status(500).json({ error: "Internal server error" });
     }
 };
-const logoutUser = (req, res) => {
+exports.logoutUser = (req, res) => {
     // In a JWT setup, the client destroys the token locally[cite: 172].
     // We send a success response to confirm the action.
     return res.status(200).json({ message: "Logout successful" });
@@ -61,7 +61,7 @@ const logoutUser = (req, res) => {
 
 //2. Issue Management APIs
 //2.1 For Community Members (CM)
-const getMyIssues = async (req, res) => {
+exports.getMyIssues = async (req, res) => {
     try {
         // req.user is populated by your JWT middleware
         const { data, error } = await prisma
@@ -77,7 +77,7 @@ const getMyIssues = async (req, res) => {
 };
 
 
-const getIssueStatus = async (req, res) => {
+exports.getIssueStatus = async (req, res) => {
     const { id } = req.params;
 
     try {
