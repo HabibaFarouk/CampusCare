@@ -181,6 +181,62 @@ exports.updateUserStatus = async (req, res) => {
 
 //3. Managerial & Admin APIs 
 //3.1 Facility Manager (Worker Management)
+// Get all workers from database
+exports.getWorkers = async (req, res) => {
+    try {
+        const { data: workers, error } = await prisma
+            .from('users')
+            .select('*')
+            .eq('role', 'worker');
+
+        if (error) throw error;
+
+        return res.status(200).json({
+            message: "Workers fetched successfully",
+            data: workers
+        });
+    } catch (err) {
+        return res.status(500).json({
+            error: err.message
+        });
+    }
+};
 
 
+// Update worker status in database
+exports.updateWorkerStatus = async (req, res) => {
+    const { id } = req.params;
+    const { status } = req.body;
+
+    if (!status) {
+        return res.status(400).json({
+            message: "Status is required"
+        });
+    }
+
+    if (status !== "active" && status !== "inactive") {
+        return res.status(400).json({
+            message: "Status must be 'active' or 'inactive'"
+        });
+    }
+
+    try {
+        const { data, error } = await prisma
+            .from('users')
+            .update({ status })
+            .eq('id', id)
+            .select();
+
+        if (error) throw error;
+
+        return res.status(200).json({
+            message: `Worker ${id} status updated to ${status}`,
+            data: data
+        });
+    } catch (err) {
+        return res.status(500).json({
+            error: err.message
+        });
+    }
+};
 //3.2 System Admin (User Management)
