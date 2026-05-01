@@ -13,6 +13,7 @@ model User {
   email     String   @unique
   password  String
   role      Role
+  isActive  Boolean  @default(true)
   tickets   Ticket[] @relation("UserTickets")
   assigned  Ticket[] @relation("AssignedTickets")
   createdAt DateTime @default(now())

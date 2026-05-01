@@ -1,5 +1,6 @@
 // index.js
-const app = require('./app'); // Import the Express app you configured in app.js
+require('dotenv').config();
+const app = require('./src/app'); // Import the Express app configured in src/app.js
 const PORT = process.env.PORT || 3000;
 
 app.listen(PORT, () => {
