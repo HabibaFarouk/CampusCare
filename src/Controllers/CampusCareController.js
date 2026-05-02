@@ -108,7 +108,95 @@ exports.getIssueStatus = async (req, res) => {
         return res.status(500).json({ error: err.message });
     }
 };
+//2.2 For Facility Managers (FM)
 
+// View all issues (supports filtering by status, category, etc.)
+exports.getAllIssues = async (req, res) => {
+    try {
+        const { status, category } = req.query;
+        const filter = {};
+        if (status) filter.status = status;
+        if (category) filter.category = category;
+
+        const tickets = await prisma.ticket.findMany({
+            where: filter,
+            include: { createdBy: { select: { name: true } }, assignedTo: { select: { name: true } } }
+        });
+        return res.status(200).json(tickets);
+    } catch (err) {
+        return res.status(500).json({ error: err.message });
+    }
+};
+
+// Review new "Issued" tickets in a prioritized view
+exports.getPrioritizedIssues = async (req, res) => {
+    try {
+        const tickets = await prisma.ticket.findMany({
+            where: { status: 'SUBMITTED' },
+            orderBy: { createdAt: 'asc' }
+        });
+        return res.status(200).json(tickets);
+    } catch (err) {
+        return res.status(500).json({ error: err.message });
+    }
+};
+
+// Assign an issue to a specific worker
+exports.assignIssueToWorker = async (req, res) => {
+    const { id } = req.params;
+    const { workerId } = req.body; 
+    try {
+        const updatedTicket = await prisma.ticket.update({
+            where: { id: parseInt(id) },
+            data: { assignedToId: parseInt(workerId), status: 'ASSIGNED' }
+        });
+        return res.status(200).json(updatedTicket);
+    } catch (err) {
+        return res.status(500).json({ error: err.message });
+    }
+};
+
+// Update issue status manually
+exports.updateIssueStatus = async (req, res) => {
+    const { id } = req.params;
+    const { status } = req.body; 
+    try {
+        const updatedTicket = await prisma.ticket.update({
+            where: { id: parseInt(id) },
+            data: { status: status } 
+        });
+        return res.status(200).json(updatedTicket);
+    } catch (err) {
+        return res.status(500).json({ error: err.message });
+    }
+};
+
+// Finalize and close a "Finished" issue
+exports.closeIssue = async (req, res) => {
+    const { id } = req.params;
+    try {
+        const updatedTicket = await prisma.ticket.update({
+            where: { id: parseInt(id) },
+            data: { status: 'RESOLVED' } 
+        });
+        return res.status(200).json(updatedTicket);
+    } catch (err) {
+        return res.status(500).json({ error: err.message });
+    }
+};
+
+// Cancel/Delete issue
+exports.deleteIssue = async (req, res) => {
+    const { id } = req.params;
+    try {
+        await prisma.ticket.delete({
+            where: { id: parseInt(id) }
+        });
+        return res.status(200).json({ message: "Issue successfully deleted" });
+    } catch (err) {
+        return res.status(500).json({ error: err.message });
+    }
+};
 // -------------- Rana's Task: Admin User Management APIs --------------
 // 3.2 System Admin (User Management)
 // GET /api/admin/users
