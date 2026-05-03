@@ -98,157 +98,9 @@ exports.getIssueStatus = async (req, res) => {
         return res.status(500).json({ error: err.message });
     }
 };
-//2.2 For Facility Managers (FM)
 
-// View all issues (supports filtering by status, category, etc.)
-exports.getAllIssues = async (req, res) => {
-    try {
-        const { status, category } = req.query;
-        const filter = {};
-        if (status) filter.status = status;
-        if (category) filter.category = category;
 
-        const tickets = await prisma.ticket.findMany({
-            where: filter,
-            include: { createdBy: { select: { name: true } }, assignedTo: { select: { name: true } } }
-        });
-        return res.status(200).json(tickets);
-    } catch (err) {
-        return res.status(500).json({ error: err.message });
-    }
-};
 
-// Review new "Issued" tickets in a prioritized view
-exports.getPrioritizedIssues = async (req, res) => {
-    try {
-        const tickets = await prisma.ticket.findMany({
-            where: { status: 'SUBMITTED' },
-            orderBy: { createdAt: 'asc' }
-        });
-        return res.status(200).json(tickets);
-    } catch (err) {
-        return res.status(500).json({ error: err.message });
-    }
-};
-
-// Assign an issue to a specific worker
-exports.assignIssueToWorker = async (req, res) => {
-    const { id } = req.params;
-    const { workerId } = req.body; 
-    try {
-        const updatedTicket = await prisma.ticket.update({
-            where: { id: parseInt(id) },
-            data: { assignedToId: parseInt(workerId), status: 'ASSIGNED' }
-        });
-        return res.status(200).json(updatedTicket);
-    } catch (err) {
-        return res.status(500).json({ error: err.message });
-    }
-};
-
-// Update issue status manually
-exports.updateIssueStatus = async (req, res) => {
-    const { id } = req.params;
-    const { status } = req.body; 
-    try {
-        const updatedTicket = await prisma.ticket.update({
-            where: { id: parseInt(id) },
-            data: { status: status } 
-        });
-        return res.status(200).json(updatedTicket);
-    } catch (err) {
-        return res.status(500).json({ error: err.message });
-    }
-};
-
-// Finalize and close a "Finished" issue
-exports.closeIssue = async (req, res) => {
-    const { id } = req.params;
-    try {
-        const updatedTicket = await prisma.ticket.update({
-            where: { id: parseInt(id) },
-            data: { status: 'RESOLVED' } 
-        });
-        return res.status(200).json(updatedTicket);
-    } catch (err) {
-        return res.status(500).json({ error: err.message });
-    }
-};
-
-// Cancel/Delete issue
-exports.deleteIssue = async (req, res) => {
-    const { id } = req.params;
-    try {
-        await prisma.ticket.delete({
-            where: { id: parseInt(id) }
-        });
-        return res.status(200).json({ message: "Issue successfully deleted" });
-    } catch (err) {
-        return res.status(500).json({ error: err.message });
-    }
-};
-// -------------- Rana's Task: Admin User Management APIs --------------
-// 3.2 System Admin (User Management)
-// GET /api/admin/users
-exports.getAllUsers = async (req, res) => {
-  try {
-    const users = await prisma.user.findMany({
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        role: true,
-        isActive: true,
-        createdAt: true,
-      },
-      orderBy: { createdAt: 'desc' },
-    });
-
-    return res.status(200).json(users);
-  } catch (error) {
-    return res.status(500).json({ error: 'Failed to fetch users' });
-  }
-};
-
-// PUT /api/admin/users/:id/status
-exports.updateUserStatus = async (req, res) => {
-  const userId = Number(req.params.id);
-  const { isActive } = req.body;
-
-  if (!Number.isInteger(userId) || userId <= 0) {
-    return res.status(400).json({ error: 'Invalid user id' });
-  }
-
-  if (typeof isActive !== 'boolean') {
-    return res.status(400).json({ error: 'isActive must be boolean' });
-  }
-
-  try {
-    const updatedUser = await prisma.user.update({
-      where: { id: userId },
-      data: { isActive },
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        role: true,
-        isActive: true,
-      },
-    });
-
-    return res.status(200).json({
-      message: `User ${isActive ? 'activated' : 'deactivated'} successfully`,
-      user: updatedUser,
-    });
-  } catch (error) {
-    if (error.code === 'P2025') {
-      return res.status(404).json({ error: 'User not found' });
-    }
-
-    return res.status(500).json({ error: 'Failed to update user status' });
-  }
-};
-//-------------- End of Rana's Task --------------
 
 
 //2.2 For Facility Managers (FM)
@@ -432,3 +284,63 @@ exports.updateWorkerStatus = async (req, res) => {
     }
 };
 //3.2 System Admin (User Management)
+
+// GET /api/admin/users
+exports.getAllUsers = async (req, res) => {
+  try {
+    const users = await prisma.user.findMany({
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        isActive: true,
+        createdAt: true,
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    return res.status(200).json(users);
+  } catch (error) {
+    return res.status(500).json({ error: 'Failed to fetch users' });
+  }
+};
+
+// PUT /api/admin/users/:id/status
+exports.updateUserStatus = async (req, res) => {
+  const userId = Number(req.params.id);
+  const { isActive } = req.body;
+
+  if (!Number.isInteger(userId) || userId <= 0) {
+    return res.status(400).json({ error: 'Invalid user id' });
+  }
+
+  if (typeof isActive !== 'boolean') {
+    return res.status(400).json({ error: 'isActive must be boolean' });
+  }
+
+  try {
+    const updatedUser = await prisma.user.update({
+      where: { id: userId },
+      data: { isActive },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        isActive: true,
+      },
+    });
+
+    return res.status(200).json({
+      message: `User ${isActive ? 'activated' : 'deactivated'} successfully`,
+      user: updatedUser,
+    });
+  } catch (error) {
+    if (error.code === 'P2025') {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    return res.status(500).json({ error: 'Failed to update user status' });
+  }
+};
