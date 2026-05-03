@@ -212,14 +212,79 @@ exports.finishIssue = async (req, res) => {
     }
 };
 
-// Minimal handlers for comments and photo upload (not in original scope).
-// These return 501 until full implementations are provided elsewhere.
 exports.addComment = async (req, res) => {
-    return res.status(501).json({ error: 'addComment not implemented' });
+    const id = Number(req.params.id);
+    const { text } = req.body;
+    
+    if (!Number.isInteger(id) || id <= 0) return res.status(400).json({ error: 'Invalid ticket id' });
+    if (!text || text.trim() === '') return res.status(400).json({ error: 'Comment text is required' });
+
+    try {
+        if (!req.user || !req.user.role || String(req.user.role).toUpperCase() !== 'WORKER') {
+            return res.status(403).json({ error: 'Only workers can perform this action' });
+        }
+
+        const ticket = await prisma.ticket.findUnique({
+            where: { id },
+            select: { id: true, assignedToId: true }
+        });
+
+        if (!ticket) return res.status(404).json({ error: 'Ticket not found' });
+        if (ticket.assignedToId !== req.user.id) return res.status(403).json({ error: 'Not authorized to comment on this ticket' });
+
+        const comment = await prisma.comment.create({
+            data: {
+                text,
+                ticketId: id,
+                workerId: req.user.id
+            }
+        });
+
+        return res.status(201).json(comment);
+    } catch (err) {
+        return res.status(500).json({ error: err.message });
+    }
 };
 
 exports.uploadCompletionPhoto = async (req, res) => {
-    return res.status(501).json({ error: 'uploadCompletionPhoto not implemented' });
+    const id = Number(req.params.id);
+    const { photoUrl } = req.body;
+
+    if (!Number.isInteger(id) || id <= 0) return res.status(400).json({ error: 'Invalid ticket id' });
+    if (!photoUrl || photoUrl.trim() === '') return res.status(400).json({ error: 'photoUrl is required' });
+
+    try {
+        if (!req.user || !req.user.role || String(req.user.role).toUpperCase() !== 'WORKER') {
+            return res.status(403).json({ error: 'Only workers can perform this action' });
+        }
+
+        const ticket = await prisma.ticket.findUnique({
+            where: { id },
+            select: { id: true, assignedToId: true }
+        });
+
+        if (!ticket) return res.status(404).json({ error: 'Ticket not found' });
+        if (ticket.assignedToId !== req.user.id) return res.status(403).json({ error: 'Not authorized to upload photo for this ticket' });
+
+        const updatedTicket = await prisma.ticket.update({
+            where: { id },
+            data: { completionPhotoUrl: photoUrl },
+            select: {
+                id: true,
+                title: true,
+                description: true,
+                category: true,
+                status: true,
+                completionPhotoUrl: true,
+                createdAt: true,
+                assignedTo: { select: { id: true, name: true, email: true } }
+            }
+        });
+
+        return res.status(200).json(updatedTicket);
+    } catch (err) {
+        return res.status(500).json({ error: err.message });
+    }
 };
 
 
