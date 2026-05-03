@@ -1,6 +1,9 @@
 const express = require('express');
 const controller = require('../Controllers/CampusCareController');
 const router = express.Router();
+
+// Use real authentication middleware (required)
+const { authenticate, authorize } = require('../middleware/auth');
 //Facility Manager flows (Part 2.2)
 router.get('/issues', authenticate, authorize('FACILITY_MANAGER', 'ADMIN'), controller.getAllIssues);
 router.get('/issues/prioritized', authenticate, authorize('FACILITY_MANAGER', 'ADMIN'), controller.getPrioritizedIssues);
@@ -10,9 +13,10 @@ router.put('/issues/:id/close', authenticate, authorize('FACILITY_MANAGER', 'ADM
 router.delete('/issues/:id', authenticate, authorize('FACILITY_MANAGER', 'ADMIN'), controller.deleteIssue);
 
 //2.3 Worker Flows
-router.get('/issues/assigned', authenticate, authorize('WORKER', 'ADMIN'), controller.getAssignedIssues);
-router.put('/issues/:id/start', authenticate, authorize('WORKER', 'ADMIN'), controller.startIssue);
-router.put('/issues/:id/finish', authenticate, authorize('WORKER', 'ADMIN'), controller.finishIssue);
+// Worker core routes (protected, worker-only)
+router.get('/api/issues/assigned', authenticate, authorize('WORKER', 'ADMIN'), controller.getAssignedIssues);
+router.put('/api/issues/:id/start', authenticate, authorize('WORKER', 'ADMIN'), controller.startIssue);
+router.put('/api/issues/:id/finish', authenticate, authorize('WORKER', 'ADMIN'), controller.finishIssue);
 router.post('/issues/:id/comments', authenticate, authorize('WORKER', 'ADMIN'), controller.addComment);
 router.post('/issues/:id/photo', authenticate, authorize('WORKER', 'ADMIN'), controller.uploadCompletionPhoto);
 

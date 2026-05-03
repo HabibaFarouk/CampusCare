@@ -40,10 +40,6 @@ exports.loginUser = async (req, res) => {
         const isValid = await bcrypt.compare(password, user.password);
         if (!isValid) return res.status(401).json({ error: "Invalid password" });
 
-        // Compare bcrypt hashes [cite: 40]
-        const isValid = await bcrypt.compare(password, user.password);
-        if (!isValid) return res.status(401).json({ error: "Invalid password" });
-
         // Generate JWT with Role-Based Access Control (RBAC) [cite: 33, 264]
         const token = jwt.sign(
             { id: user.id, role: user.role },
@@ -69,12 +65,7 @@ exports.getMyIssues = async (req, res) => {
         const { data, error } = await prisma
             .from('tickets')
             .select('*')
-            .eq('user_id', req.user.id);
-        // req.user is populated by your JWT middleware
-        const { data, error } = await prisma
-            .from('tickets')
-            .select('*')
-            .eq('user_id', req.user.id); // Filter by logged-in user [cite: 35]
+            .eq('user_id', req.user.id); // req.user is populated by your JWT middleware; filter by logged-in user [cite: 35]
 
         if (error) throw error;
         return res.status(200).json(data);
@@ -90,7 +81,6 @@ exports.getIssueStatus = async (req, res) => {
     try {
         const { data: ticket, error } = await prisma
             .from('tickets')
-            .select('id, description, location, status, category')
             .select('id, description, location, status, category') // [cite: 126]
             .eq('id', id)
             .single();
@@ -117,6 +107,120 @@ exports.getIssueStatus = async (req, res) => {
 
 
 //2.3 For Workers (W)
+// ==========================================================
+// ANDREW'S PART: 2.3 For Workers (Core Flows)
+// ==========================================================
+
+// View only tickets assigned to the logged-in worker
+exports.getAssignedIssues = async (req, res) => {
+    try {
+        const workerId = req.user && req.user.id;
+        if (!workerId) return res.status(401).json({ error: 'Unauthorized' });
+
+        const tickets = await prisma.ticket.findMany({
+            where: { assignedToId: workerId },
+            select: {
+                id: true,
+                title: true,
+                description: true,
+                category: true,
+                status: true,
+                createdAt: true,
+                assignedTo: { select: { id: true, name: true, email: true } }
+            },
+            orderBy: { createdAt: 'desc' }
+        });
+
+        return res.status(200).json(tickets);
+    } catch (err) {
+        return res.status(500).json({ error: err.message });
+    }
+};
+
+// Update status to "In Progress"
+exports.startIssue = async (req, res) => {
+    const id = Number(req.params.id);
+    if (!Number.isInteger(id) || id <= 0) return res.status(400).json({ error: 'Invalid ticket id' });
+
+    try {
+        const ticket = await prisma.ticket.findUnique({
+            where: { id },
+            select: { id: true, status: true, assignedToId: true }
+        });
+
+        if (!ticket) return res.status(404).json({ error: 'Ticket not found' });
+        if (ticket.assignedToId !== req.user.id) return res.status(403).json({ error: 'Not authorized to start this ticket' });
+
+        if (ticket.status === 'IN_PROGRESS') return res.status(400).json({ error: 'Ticket already started' });
+        if (ticket.status === 'RESOLVED') return res.status(400).json({ error: 'Ticket already resolved' });
+        if (ticket.status !== 'ASSIGNED') return res.status(400).json({ error: `Cannot start ticket when status is ${ticket.status}` });
+
+        const updatedTicket = await prisma.ticket.update({
+            where: { id },
+            data: { status: 'IN_PROGRESS' },
+            select: {
+                id: true,
+                title: true,
+                description: true,
+                category: true,
+                status: true,
+                createdAt: true,
+                assignedTo: { select: { id: true, name: true, email: true } }
+            }
+        });
+
+        return res.status(200).json(updatedTicket);
+    } catch (err) {
+        return res.status(500).json({ error: err.message });
+    }
+};
+
+// Update status to "Finished/Resolved"
+exports.finishIssue = async (req, res) => {
+    const id = Number(req.params.id);
+    if (!Number.isInteger(id) || id <= 0) return res.status(400).json({ error: 'Invalid ticket id' });
+
+    try {
+        const ticket = await prisma.ticket.findUnique({
+            where: { id },
+            select: { id: true, status: true, assignedToId: true }
+        });
+
+        if (!ticket) return res.status(404).json({ error: 'Ticket not found' });
+        if (ticket.assignedToId !== req.user.id) return res.status(403).json({ error: 'Not authorized to finish this ticket' });
+
+        if (ticket.status === 'RESOLVED') return res.status(400).json({ error: 'Ticket already resolved' });
+        if (ticket.status !== 'IN_PROGRESS') return res.status(400).json({ error: `Cannot finish ticket when status is ${ticket.status}` });
+
+        const updatedTicket = await prisma.ticket.update({
+            where: { id },
+            data: { status: 'RESOLVED' },
+            select: {
+                id: true,
+                title: true,
+                description: true,
+                category: true,
+                status: true,
+                createdAt: true,
+                assignedTo: { select: { id: true, name: true, email: true } }
+            }
+        });
+
+        return res.status(200).json(updatedTicket);
+    } catch (err) {
+        return res.status(500).json({ error: err.message });
+    }
+};
+
+// Minimal handlers for comments and photo upload (not in original scope).
+// These return 501 until full implementations are provided elsewhere.
+exports.addComment = async (req, res) => {
+    return res.status(501).json({ error: 'addComment not implemented' });
+};
+
+exports.uploadCompletionPhoto = async (req, res) => {
+    return res.status(501).json({ error: 'uploadCompletionPhoto not implemented' });
+};
 
 
 //3. Managerial & Admin APIs 
