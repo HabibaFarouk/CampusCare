@@ -1,14 +1,23 @@
 const prisma = require('../prismaClient');
-
-//1. Authentication & Authorization APIs
-
-//2. Issue Management APIs
-//2.1 For Community Members (CM)
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcrypt');
 require('dotenv').config();
 
 //1. Authentication & Authorization APIs
+const generateTokens = (user) => {
+    const accessToken = jwt.sign(
+        { id: user.id, role: user.role },
+        process.env.JWT_ACCESS_SECRET,
+        { expiresIn: '15m' }
+    );
+    const refreshToken = jwt.sign(
+        { id: user.id },
+        process.env.JWT_REFRESH_SECRET,
+        { expiresIn: '7d' }
+    );
+    return { accessToken, refreshToken };
+};
+
 exports.registerUser = async (req, res) => {
     const { name, email, password, role } = req.body;
     
@@ -25,39 +34,64 @@ exports.registerUser = async (req, res) => {
         return res.status(400).json({ error: err.message });
     }
 };
+
 exports.loginUser = async (req, res) => {
     const { email, password } = req.body;
 
     try {
+        // 1. Fetch user from database using Prisma
         const { data: user, error } = await prisma
             .from('users')
             .select('*')
             .eq('email', email)
             .single();
 
-        if (error || !user) return res.status(401).json({ error: "User not found" });
+        // 2. Validate user existence
+        if (error || !user) {
+            return res.status(401).json({ error: "User not found" });
+        }
 
+        // 3. Verify password with bcrypt
         const isValid = await bcrypt.compare(password, user.password);
-        if (!isValid) return res.status(401).json({ error: "Invalid password" });
+        if (!isValid) {
+            return res.status(401).json({ error: "Invalid password" });
+        }
 
-        // Generate JWT with Role-Based Access Control (RBAC) [cite: 33, 264]
-        const token = jwt.sign(
-            { id: user.id, role: user.role },
-            process.env.JWT_SECRET,
-            { expiresIn: '24h' }
-        );
+        // 4. Generate Dual Tokens (Access + Refresh)
+        // Note: Ensure your generateTokens function uses user.id and user.role
+        const { accessToken, refreshToken } = generateTokens(user);
 
-        return res.status(200).json({ token, role: user.role });
+        // 5. Set Refresh Token in a secure, httpOnly cookie
+        res.cookie('refreshToken', refreshToken, {
+            httpOnly: true, // Prevents XSS script access
+            secure: process.env.NODE_ENV === 'production', // Only over HTTPS in prod
+            sameSite: 'strict', // Prevents CSRF
+            maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+        });
+
+        // 6. Return Access Token and basic User info to the client
+        return res.status(200).json({ 
+            accessToken, 
+            user: {
+                id: user.id,
+                email: user.email,
+                role: user.role
+            }
+        });
+
     } catch (err) {
+        console.error("Login Error:", err);
         return res.status(500).json({ error: "Internal server error" });
     }
 };
-exports.logoutUser = (req, res) => {
-    // In a JWT setup, the client destroys the token locally[cite: 172].
-    // We send a success response to confirm the action.
-    return res.status(200).json({ message: "Logout successful" });
+exports.logout = (req, res) => {
+    const token = req.headers.authorization?.split(' ')[1];
+    if (token) {
+        tokenBlacklist.add(token); // Revoke the current access token
+    }
+    res.clearCookie('refreshToken');
+    res.status(200).json({ message: "Logged out successfully" });
 };
-
 //2. Issue Management APIs
 //2.1 For Community Members (CM)
 exports.getMyIssues = async (req, res) => {
