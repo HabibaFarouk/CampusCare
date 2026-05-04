@@ -2,26 +2,117 @@ const express = require('express');
 const controller = require('../Controllers/CampusCareController');
 const router = express.Router();
 
-// Use real authentication middleware (required)
 const { authenticate, authorize } = require('../middleware/auth');
-//Facility Manager flows (Part 2.2)
+
+// Auth (public)
+router.post('/auth/register', controller.registerUser);
+router.post('/auth/login', controller.loginUser);
+router.post('/auth/logout', authenticate, controller.logout);
+
+// Community member — tickets (create / my list)
+router.post(
+  '/issues',
+  authenticate,
+  authorize('MEMBER', 'FACILITY_MANAGER', 'ADMIN'),
+  controller.createIssue
+);
+router.get(
+  '/my/issues',
+  authenticate,
+  authorize('MEMBER', 'FACILITY_MANAGER', 'ADMIN'),
+  controller.getMyIssues
+);
+
+// Facility Manager — list & prioritize (before /issues/:id)
 router.get('/issues', authenticate, authorize('FACILITY_MANAGER', 'ADMIN'), controller.getAllIssues);
-router.get('/issues/prioritized', authenticate, authorize('FACILITY_MANAGER', 'ADMIN'), controller.getPrioritizedIssues);
-router.put('/issues/:id/assign', authenticate, authorize('FACILITY_MANAGER', 'ADMIN'), controller.assignIssueToWorker);
-router.put('/issues/:id/status', authenticate, authorize('FACILITY_MANAGER', 'WORKER', 'ADMIN'), controller.updateIssueStatus);
-router.put('/issues/:id/close', authenticate, authorize('FACILITY_MANAGER', 'ADMIN'), controller.closeIssue);
-router.delete('/issues/:id', authenticate, authorize('FACILITY_MANAGER', 'ADMIN'), controller.deleteIssue);
+router.get(
+  '/issues/prioritized',
+  authenticate,
+  authorize('FACILITY_MANAGER', 'ADMIN'),
+  controller.getPrioritizedIssues
+);
 
-//2.3 Worker Flows
-// Worker core routes (protected, worker-only)
-router.get('/api/issues/assigned', authenticate, authorize('WORKER', 'ADMIN'), controller.getAssignedIssues);
-router.put('/api/issues/:id/start', authenticate, authorize('WORKER', 'ADMIN'), controller.startIssue);
-router.put('/api/issues/:id/finish', authenticate, authorize('WORKER', 'ADMIN'), controller.finishIssue);
-router.post('/issues/:id/comments', authenticate, authorize('WORKER', 'ADMIN'), controller.addComment);
-router.post('/issues/:id/photo', authenticate, authorize('WORKER', 'ADMIN'), controller.uploadCompletionPhoto);
+// Single ticket (any authorized role that owns / is assigned / FM / admin)
+router.get('/issues/:id', authenticate, controller.getIssueStatus);
 
-// 3.2 System Admin (User Management) rana task
-router.get('/api/admin/users', controller.getAllUsers);
-router.put('/api/admin/users/:id/status', controller.updateUserStatus);
+router.put(
+  '/issues/:id/assign',
+  authenticate,
+  authorize('FACILITY_MANAGER', 'ADMIN'),
+  controller.assignIssueToWorker
+);
+router.put(
+  '/issues/:id/status',
+  authenticate,
+  authorize('FACILITY_MANAGER', 'WORKER', 'ADMIN'),
+  controller.updateIssueStatus
+);
+router.put(
+  '/issues/:id/close',
+  authenticate,
+  authorize('FACILITY_MANAGER', 'ADMIN'),
+  controller.closeIssue
+);
+router.delete(
+  '/issues/:id',
+  authenticate,
+  authorize('FACILITY_MANAGER', 'ADMIN'),
+  controller.deleteIssue
+);
+
+// Worker flows
+router.get(
+  '/api/issues/assigned',
+  authenticate,
+  authorize('WORKER', 'ADMIN'),
+  controller.getAssignedIssues
+);
+router.put(
+  '/api/issues/:id/start',
+  authenticate,
+  authorize('WORKER', 'ADMIN'),
+  controller.startIssue
+);
+router.put(
+  '/api/issues/:id/finish',
+  authenticate,
+  authorize('WORKER', 'ADMIN'),
+  controller.finishIssue
+);
+router.post(
+  '/issues/:id/comments',
+  authenticate,
+  authorize('WORKER', 'ADMIN'),
+  controller.addComment
+);
+router.post(
+  '/issues/:id/photo',
+  authenticate,
+  authorize('WORKER', 'ADMIN'),
+  controller.uploadCompletionPhoto
+);
+
+// Facility Manager — workers
+router.get(
+  '/api/workers',
+  authenticate,
+  authorize('FACILITY_MANAGER', 'ADMIN'),
+  controller.getWorkers
+);
+router.put(
+  '/api/workers/:id/status',
+  authenticate,
+  authorize('FACILITY_MANAGER', 'ADMIN'),
+  controller.updateWorkerStatus
+);
+
+// System admin
+router.get('/api/admin/users', authenticate, authorize('ADMIN'), controller.getAllUsers);
+router.put(
+  '/api/admin/users/:id/status',
+  authenticate,
+  authorize('ADMIN'),
+  controller.updateUserStatus
+);
 
 module.exports = router;

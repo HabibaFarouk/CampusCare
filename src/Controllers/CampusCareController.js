@@ -1,480 +1,647 @@
 const prisma = require('../prismaClient');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcrypt');
-require('dotenv').config();
+const { tokenBlacklist } = require('../middleware/auth');
 
-//1. Authentication & Authorization APIs
+const VALID_STATUSES = ['SUBMITTED', 'ASSIGNED', 'IN_PROGRESS', 'RESOLVED', 'CANCELLED'];
+const VALID_CATEGORIES = ['MAINTENANCE', 'CLEANLINESS', 'SUSTAINABILITY'];
+
+function parseRole(role) {
+  if (role == null || role === '') return 'MEMBER';
+  const r = String(role).trim().toUpperCase().replace(/[\s-]+/g, '_');
+  const aliases = {
+    CM: 'MEMBER',
+    COMMUNITY: 'MEMBER',
+    COMMUNITY_MEMBER: 'MEMBER',
+    MEMBER: 'MEMBER',
+    FM: 'FACILITY_MANAGER',
+    FACILITY_MANAGER: 'FACILITY_MANAGER',
+    MANAGER: 'FACILITY_MANAGER',
+    WORKER: 'WORKER',
+    W: 'WORKER',
+    ADMIN: 'ADMIN',
+  };
+  const mapped = aliases[r] || r;
+  const allowed = ['MEMBER', 'FACILITY_MANAGER', 'WORKER', 'ADMIN'];
+  return allowed.includes(mapped) ? mapped : null;
+}
+
+// 1. Authentication & Authorization APIs
 const generateTokens = (user) => {
-    const accessToken = jwt.sign(
-        { id: user.id, role: user.role },
-        process.env.JWT_ACCESS_SECRET,
-        { expiresIn: '15m' }
-    );
-    const refreshToken = jwt.sign(
-        { id: user.id },
-        process.env.JWT_REFRESH_SECRET,
-        { expiresIn: '7d' }
-    );
-    return { accessToken, refreshToken };
+  const accessToken = jwt.sign(
+    { id: user.id, role: user.role },
+    process.env.JWT_ACCESS_SECRET,
+    { expiresIn: '15m' }
+  );
+  const refreshToken = jwt.sign(
+    { id: user.id },
+    process.env.JWT_REFRESH_SECRET,
+    { expiresIn: '7d' }
+  );
+  return { accessToken, refreshToken };
 };
 
 exports.registerUser = async (req, res) => {
-    const { name, email, password, role } = req.body;
-    
-    try {
-        const hashedPassword = await bcrypt.hash(password, 10);
+  const { name, email, password, role: roleInput } = req.body;
 
-        const { data, error } = await prisma
-            .from('users')
-            .insert([{ name, email, password: hashedPassword, role }]);
+  if (!name || !email || !password) {
+    return res.status(400).json({ error: 'name, email, and password are required' });
+  }
 
-        if (error) throw error;
-        return res.status(201).json({ message: "Registration successful" });
-    } catch (err) {
-        return res.status(400).json({ error: err.message });
+  const role = parseRole(roleInput);
+  if (!role) {
+    return res.status(400).json({ error: 'Invalid role. Use MEMBER, FACILITY_MANAGER, WORKER, or ADMIN' });
+  }
+
+  try {
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    await prisma.user.create({
+      data: {
+        name,
+        email,
+        password: hashedPassword,
+        role,
+      },
+    });
+
+    return res.status(201).json({ message: 'Registration successful' });
+  } catch (err) {
+    if (err.code === 'P2002') {
+      return res.status(400).json({ error: 'Email already registered' });
     }
+    return res.status(400).json({ error: err.message });
+  }
 };
 
 exports.loginUser = async (req, res) => {
-    const { email, password } = req.body;
+  const { email, password } = req.body;
 
-    try {
-        // 1. Fetch user from database using Prisma
-        const { data: user, error } = await prisma
-            .from('users')
-            .select('*')
-            .eq('email', email)
-            .single();
+  if (!email || !password) {
+    return res.status(400).json({ error: 'email and password are required' });
+  }
 
-        // 2. Validate user existence
-        if (error || !user) {
-            return res.status(401).json({ error: "User not found" });
-        }
+  try {
+    const user = await prisma.user.findUnique({ where: { email } });
 
-        // 3. Verify password with bcrypt
-        const isValid = await bcrypt.compare(password, user.password);
-        if (!isValid) {
-            return res.status(401).json({ error: "Invalid password" });
-        }
-
-        // 4. Generate Dual Tokens (Access + Refresh)
-        // Note: Ensure your generateTokens function uses user.id and user.role
-        const { accessToken, refreshToken } = generateTokens(user);
-
-        // 5. Set Refresh Token in a secure, httpOnly cookie
-        res.cookie('refreshToken', refreshToken, {
-            httpOnly: true, // Prevents XSS script access
-            secure: process.env.NODE_ENV === 'production', // Only over HTTPS in prod
-            sameSite: 'strict', // Prevents CSRF
-            maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
-        });
-
-        // 6. Return Access Token and basic User info to the client
-        return res.status(200).json({ 
-            accessToken, 
-            user: {
-                id: user.id,
-                email: user.email,
-                role: user.role
-            }
-        });
-
-    } catch (err) {
-        console.error("Login Error:", err);
-        return res.status(500).json({ error: "Internal server error" });
+    if (!user) {
+      return res.status(401).json({ error: 'User not found' });
     }
+
+    if (!user.isActive) {
+      return res.status(403).json({ error: 'Account is deactivated' });
+    }
+
+    const isValid = await bcrypt.compare(password, user.password);
+    if (!isValid) {
+      return res.status(401).json({ error: 'Invalid password' });
+    }
+
+    const { accessToken, refreshToken } = generateTokens(user);
+
+    res.cookie('refreshToken', refreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+    });
+
+    return res.status(200).json({
+      accessToken,
+      user: {
+        id: user.id,
+        email: user.email,
+        role: user.role,
+      },
+    });
+  } catch (err) {
+    console.error('Login Error:', err);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
 };
+
 exports.logout = (req, res) => {
-    const token = req.headers.authorization?.split(' ')[1];
-    if (token) {
-        tokenBlacklist.add(token); // Revoke the current access token
-    }
-    res.clearCookie('refreshToken');
-    res.status(200).json({ message: "Logged out successfully" });
+  const token = req.headers.authorization?.split(' ')[1];
+  if (token) {
+    tokenBlacklist.add(token);
+  }
+  res.clearCookie('refreshToken');
+  res.status(200).json({ message: 'Logged out successfully' });
 };
-//2. Issue Management APIs
-//2.1 For Community Members (CM)
+
+// Community member: create issue
+exports.createIssue = async (req, res) => {
+  const { title, description, category, location, imageUrl } = req.body;
+
+  if (!title || !description || !category || !location) {
+    return res.status(400).json({ error: 'title, description, category, and location are required' });
+  }
+
+  const cat = String(category).toUpperCase();
+  if (!VALID_CATEGORIES.includes(cat)) {
+    return res.status(400).json({ error: `Invalid category. Use one of: ${VALID_CATEGORIES.join(', ')}` });
+  }
+
+  try {
+    const ticket = await prisma.ticket.create({
+      data: {
+        title,
+        description,
+        category: cat,
+        location,
+        imageUrl: imageUrl || null,
+        createdById: req.user.id,
+      },
+      include: {
+        createdBy: { select: { id: true, name: true, email: true } },
+      },
+    });
+
+    return res.status(201).json(ticket);
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
+};
+
+// 2.1 For Community Members (CM)
 exports.getMyIssues = async (req, res) => {
-    try {
-        const { data, error } = await prisma
-            .from('tickets')
-            .select('*')
-            .eq('user_id', req.user.id); // req.user is populated by your JWT middleware; filter by logged-in user [cite: 35]
-
-        if (error) throw error;
-        return res.status(200).json(data);
-    } catch (err) {
-        return res.status(500).json({ error: err.message });
-    }
+  try {
+    const data = await prisma.ticket.findMany({
+      where: { createdById: req.user.id },
+      orderBy: { createdAt: 'desc' },
+      include: {
+        assignedTo: { select: { id: true, name: true, email: true } },
+      },
+    });
+    return res.status(200).json(data);
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
 };
-
 
 exports.getIssueStatus = async (req, res) => {
-    const { id } = req.params;
+  const id = Number(req.params.id);
+  if (!Number.isInteger(id) || id <= 0) {
+    return res.status(400).json({ error: 'Invalid ticket id' });
+  }
 
-    try {
-        const { data: ticket, error } = await prisma
-            .from('tickets')
-            .select('id, description, location, status, category') // [cite: 126]
-            .eq('id', id)
-            .single();
+  try {
+    const ticket = await prisma.ticket.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        title: true,
+        description: true,
+        location: true,
+        status: true,
+        category: true,
+        imageUrl: true,
+        completionPhotoUrl: true,
+        createdById: true,
+        assignedToId: true,
+        createdAt: true,
+        updatedAt: true,
+        assignedTo: { select: { id: true, name: true, email: true } },
+      },
+    });
 
-        if (error || !ticket) return res.status(404).json({ error: "Ticket not found" });
+    if (!ticket) return res.status(404).json({ error: 'Ticket not found' });
 
-        // Ensure a user can only view their own ticket status [cite: 264]
-        if (ticket.user_id !== req.user.id && req.user.role !== 'admin') {
-            return res.status(403).json({ error: "Access denied" });
-        }
+    const role = String(req.user.role).toUpperCase();
+    const uid = req.user.id;
+    const canView =
+      role === 'ADMIN' ||
+      role === 'FACILITY_MANAGER' ||
+      ticket.createdById === uid ||
+      ticket.assignedToId === uid;
 
-        // Returns current status: Issued, Assigned, InProgress, or Finished [cite: 198]
-        return res.status(200).json(ticket);
-    } catch (err) {
-        return res.status(500).json({ error: err.message });
+    if (!canView) {
+      return res.status(403).json({ error: 'Access denied' });
     }
+
+    return res.status(200).json(ticket);
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
 };
 
-//2.2 For Facility Managers (FM)
-// View all issues (supports filtering by status, category, etc.)
+// 2.2 For Facility Managers (FM)
 exports.getAllIssues = async (req, res) => {
-    try {
-        const { status, category } = req.query;
-        const filter = {};
-        if (status) filter.status = status;
-        if (category) filter.category = category;
-
-        const tickets = await prisma.ticket.findMany({
-            where: filter,
-            include: { createdBy: { select: { name: true } }, assignedTo: { select: { name: true } } }
-        });
-        return res.status(200).json(tickets);
-    } catch (err) {
-        return res.status(500).json({ error: err.message });
+  try {
+    const { status, category } = req.query;
+    const filter = {};
+    if (status) {
+      const s = String(status).toUpperCase();
+      if (!VALID_STATUSES.includes(s)) {
+        return res.status(400).json({ error: `Invalid status. Use one of: ${VALID_STATUSES.join(', ')}` });
+      }
+      filter.status = s;
     }
+    if (category) {
+      const c = String(category).toUpperCase();
+      if (!VALID_CATEGORIES.includes(c)) {
+        return res.status(400).json({ error: `Invalid category. Use one of: ${VALID_CATEGORIES.join(', ')}` });
+      }
+      filter.category = c;
+    }
+
+    const tickets = await prisma.ticket.findMany({
+      where: filter,
+      include: {
+        createdBy: { select: { name: true, email: true } },
+        assignedTo: { select: { name: true, email: true } },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+    return res.status(200).json(tickets);
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
 };
 
-// Review new "Issued" tickets in a prioritized view
 exports.getPrioritizedIssues = async (req, res) => {
-    try {
-        const tickets = await prisma.ticket.findMany({
-            where: { status: 'SUBMITTED' },
-            orderBy: { createdAt: 'asc' }
-        });
-        return res.status(200).json(tickets);
-    } catch (err) {
-        return res.status(500).json({ error: err.message });
-    }
+  try {
+    const tickets = await prisma.ticket.findMany({
+      where: { status: 'SUBMITTED' },
+      orderBy: { createdAt: 'asc' },
+      include: {
+        createdBy: { select: { name: true, email: true } },
+      },
+    });
+    return res.status(200).json(tickets);
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
 };
 
-// Assign an issue to a specific worker
 exports.assignIssueToWorker = async (req, res) => {
-    const id = Number(req.params.id);
-    const { workerId } = req.body; 
-    if (!Number.isInteger(id) || id <= 0) return res.status(400).json({ error: 'Invalid ticket id' });
+  const id = Number(req.params.id);
+  const { workerId } = req.body;
+  if (!Number.isInteger(id) || id <= 0) return res.status(400).json({ error: 'Invalid ticket id' });
 
-    try {
-        const updatedTicket = await prisma.ticket.update({
-            where: { id },
-            data: { assignedToId: parseInt(workerId), status: 'ASSIGNED' }
-        });
-        return res.status(200).json(updatedTicket);
-    } catch (err) {
-        return res.status(500).json({ error: err.message });
+  const wid = parseInt(workerId, 10);
+  if (!Number.isInteger(wid) || wid <= 0) {
+    return res.status(400).json({ error: 'Valid workerId is required' });
+  }
+
+  try {
+    const worker = await prisma.user.findFirst({
+      where: { id: wid, role: 'WORKER' },
+    });
+    if (!worker) {
+      return res.status(404).json({ error: 'Worker not found' });
     }
+
+    const updatedTicket = await prisma.ticket.update({
+      where: { id },
+      data: { assignedToId: wid, status: 'ASSIGNED' },
+      include: {
+        createdBy: { select: { name: true } },
+        assignedTo: { select: { name: true, email: true } },
+      },
+    });
+    return res.status(200).json(updatedTicket);
+  } catch (err) {
+    if (err.code === 'P2025') {
+      return res.status(404).json({ error: 'Ticket not found' });
+    }
+    return res.status(500).json({ error: err.message });
+  }
 };
 
-// Update issue status manually
 exports.updateIssueStatus = async (req, res) => {
-    const id = Number(req.params.id);
-    const { status } = req.body; 
-    if (!Number.isInteger(id) || id <= 0) return res.status(400).json({ error: 'Invalid ticket id' });
+  const id = Number(req.params.id);
+  const { status } = req.body;
+  if (!Number.isInteger(id) || id <= 0) return res.status(400).json({ error: 'Invalid ticket id' });
 
-    try {
-        const updatedTicket = await prisma.ticket.update({
-            where: { id },
-            data: { status: status } 
-        });
-        return res.status(200).json(updatedTicket);
-    } catch (err) {
-        return res.status(500).json({ error: err.message });
+  if (!status || !VALID_STATUSES.includes(String(status).toUpperCase())) {
+    return res.status(400).json({ error: `Invalid status. Use one of: ${VALID_STATUSES.join(', ')}` });
+  }
+
+  try {
+    const updatedTicket = await prisma.ticket.update({
+      where: { id },
+      data: { status: String(status).toUpperCase() },
+      include: {
+        createdBy: { select: { name: true } },
+        assignedTo: { select: { name: true } },
+      },
+    });
+    return res.status(200).json(updatedTicket);
+  } catch (err) {
+    if (err.code === 'P2025') {
+      return res.status(404).json({ error: 'Ticket not found' });
     }
+    return res.status(500).json({ error: err.message });
+  }
 };
 
-// Finalize and close a "Finished" issue
 exports.closeIssue = async (req, res) => {
-    const id = Number(req.params.id);
-    if (!Number.isInteger(id) || id <= 0) return res.status(400).json({ error: 'Invalid ticket id' });
+  const id = Number(req.params.id);
+  if (!Number.isInteger(id) || id <= 0) return res.status(400).json({ error: 'Invalid ticket id' });
 
-    try {
-        const updatedTicket = await prisma.ticket.update({
-            where: { id },
-            data: { status: 'RESOLVED' } 
-        });
-        return res.status(200).json(updatedTicket);
-    } catch (err) {
-        return res.status(500).json({ error: err.message });
+  try {
+    const updatedTicket = await prisma.ticket.update({
+      where: { id },
+      data: { status: 'RESOLVED' },
+    });
+    return res.status(200).json(updatedTicket);
+  } catch (err) {
+    if (err.code === 'P2025') {
+      return res.status(404).json({ error: 'Ticket not found' });
     }
+    return res.status(500).json({ error: err.message });
+  }
 };
 
-// Cancel/Delete issue
 exports.deleteIssue = async (req, res) => {
-    const id = Number(req.params.id);
-    if (!Number.isInteger(id) || id <= 0) return res.status(400).json({ error: 'Invalid ticket id' });
+  const id = Number(req.params.id);
+  if (!Number.isInteger(id) || id <= 0) return res.status(400).json({ error: 'Invalid ticket id' });
 
-    try {
-        await prisma.ticket.delete({
-            where: { id }
-        });
-        return res.status(200).json({ message: "Issue successfully deleted" });
-    } catch (err) {
-        return res.status(500).json({ error: err.message });
+  try {
+    await prisma.$transaction([
+      prisma.comment.deleteMany({ where: { ticketId: id } }),
+      prisma.ticket.delete({ where: { id } }),
+    ]);
+    return res.status(200).json({ message: 'Issue successfully deleted' });
+  } catch (err) {
+    if (err.code === 'P2025') {
+      return res.status(404).json({ error: 'Ticket not found' });
     }
+    return res.status(500).json({ error: err.message });
+  }
 };
 
-//2.3 For Workers (W)
-// ==========================================================
-// ANDREW'S PART: 2.3 For Workers (Core Flows)
-// ==========================================================
-
-// View only tickets assigned to the logged-in worker
+// 2.3 For Workers (W)
 exports.getAssignedIssues = async (req, res) => {
-    try {
-        const workerId = req.user && req.user.id;
-        if (!workerId) return res.status(401).json({ error: 'Unauthorized' });
+  try {
+    const workerId = req.user && req.user.id;
+    if (!workerId) return res.status(401).json({ error: 'Unauthorized' });
 
-        const tickets = await prisma.ticket.findMany({
-            where: { assignedToId: workerId },
-            select: {
-                id: true,
-                title: true,
-                description: true,
-                category: true,
-                status: true,
-                createdAt: true,
-                assignedTo: { select: { id: true, name: true, email: true } }
-            },
-            orderBy: { createdAt: 'desc' }
-        });
+    const role = String(req.user.role).toUpperCase();
+    const where =
+      role === 'ADMIN' ? { assignedToId: { not: null } } : { assignedToId: workerId };
 
-        return res.status(200).json(tickets);
-    } catch (err) {
-        return res.status(500).json({ error: err.message });
-    }
+    const tickets = await prisma.ticket.findMany({
+      where,
+      select: {
+        id: true,
+        title: true,
+        description: true,
+        category: true,
+        status: true,
+        createdAt: true,
+        assignedTo: { select: { id: true, name: true, email: true } },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    return res.status(200).json(tickets);
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
 };
 
-// Update status to "In Progress"
 exports.startIssue = async (req, res) => {
-    const id = Number(req.params.id);
-    if (!Number.isInteger(id) || id <= 0) return res.status(400).json({ error: 'Invalid ticket id' });
+  const id = Number(req.params.id);
+  if (!Number.isInteger(id) || id <= 0) return res.status(400).json({ error: 'Invalid ticket id' });
 
-    try {
-        const ticket = await prisma.ticket.findUnique({
-            where: { id },
-            select: { id: true, status: true, assignedToId: true }
-        });
+  try {
+    const ticket = await prisma.ticket.findUnique({
+      where: { id },
+      select: { id: true, status: true, assignedToId: true },
+    });
 
-        if (!ticket) return res.status(404).json({ error: 'Ticket not found' });
-        if (ticket.assignedToId !== req.user.id) return res.status(403).json({ error: 'Not authorized to start this ticket' });
-
-        if (ticket.status === 'IN_PROGRESS') return res.status(400).json({ error: 'Ticket already started' });
-        if (ticket.status === 'RESOLVED') return res.status(400).json({ error: 'Ticket already resolved' });
-        if (ticket.status !== 'ASSIGNED') return res.status(400).json({ error: `Cannot start ticket when status is ${ticket.status}` });
-
-        const updatedTicket = await prisma.ticket.update({
-            where: { id },
-            data: { status: 'IN_PROGRESS' },
-            select: {
-                id: true,
-                title: true,
-                description: true,
-                category: true,
-                status: true,
-                createdAt: true,
-                assignedTo: { select: { id: true, name: true, email: true } }
-            }
-        });
-
-        return res.status(200).json(updatedTicket);
-    } catch (err) {
-        return res.status(500).json({ error: err.message });
+    if (!ticket) return res.status(404).json({ error: 'Ticket not found' });
+    const role = String(req.user.role).toUpperCase();
+    if (role !== 'ADMIN' && ticket.assignedToId !== req.user.id) {
+      return res.status(403).json({ error: 'Not authorized to start this ticket' });
     }
+
+    if (ticket.status === 'IN_PROGRESS') return res.status(400).json({ error: 'Ticket already started' });
+    if (ticket.status === 'RESOLVED') return res.status(400).json({ error: 'Ticket already resolved' });
+    if (ticket.status !== 'ASSIGNED') {
+      return res.status(400).json({ error: `Cannot start ticket when status is ${ticket.status}` });
+    }
+
+    const updatedTicket = await prisma.ticket.update({
+      where: { id },
+      data: { status: 'IN_PROGRESS' },
+      select: {
+        id: true,
+        title: true,
+        description: true,
+        category: true,
+        status: true,
+        createdAt: true,
+        assignedTo: { select: { id: true, name: true, email: true } },
+      },
+    });
+
+    return res.status(200).json(updatedTicket);
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
 };
 
-// Update status to "Finished/Resolved"
 exports.finishIssue = async (req, res) => {
-    const id = Number(req.params.id);
-    if (!Number.isInteger(id) || id <= 0) return res.status(400).json({ error: 'Invalid ticket id' });
+  const id = Number(req.params.id);
+  if (!Number.isInteger(id) || id <= 0) return res.status(400).json({ error: 'Invalid ticket id' });
 
-    try {
-        const ticket = await prisma.ticket.findUnique({
-            where: { id },
-            select: { id: true, status: true, assignedToId: true }
-        });
+  try {
+    const ticket = await prisma.ticket.findUnique({
+      where: { id },
+      select: { id: true, status: true, assignedToId: true },
+    });
 
-        if (!ticket) return res.status(404).json({ error: 'Ticket not found' });
-        if (ticket.assignedToId !== req.user.id) return res.status(403).json({ error: 'Not authorized to finish this ticket' });
-
-        if (ticket.status === 'RESOLVED') return res.status(400).json({ error: 'Ticket already resolved' });
-        if (ticket.status !== 'IN_PROGRESS') return res.status(400).json({ error: `Cannot finish ticket when status is ${ticket.status}` });
-
-        const updatedTicket = await prisma.ticket.update({
-            where: { id },
-            data: { status: 'RESOLVED' },
-            select: {
-                id: true,
-                title: true,
-                description: true,
-                category: true,
-                status: true,
-                createdAt: true,
-                assignedTo: { select: { id: true, name: true, email: true } }
-            }
-        });
-
-        return res.status(200).json(updatedTicket);
-    } catch (err) {
-        return res.status(500).json({ error: err.message });
+    if (!ticket) return res.status(404).json({ error: 'Ticket not found' });
+    const role = String(req.user.role).toUpperCase();
+    if (role !== 'ADMIN' && ticket.assignedToId !== req.user.id) {
+      return res.status(403).json({ error: 'Not authorized to finish this ticket' });
     }
+
+    if (ticket.status === 'RESOLVED') return res.status(400).json({ error: 'Ticket already resolved' });
+    if (ticket.status !== 'IN_PROGRESS') {
+      return res.status(400).json({ error: `Cannot finish ticket when status is ${ticket.status}` });
+    }
+
+    const updatedTicket = await prisma.ticket.update({
+      where: { id },
+      data: { status: 'RESOLVED' },
+      select: {
+        id: true,
+        title: true,
+        description: true,
+        category: true,
+        status: true,
+        createdAt: true,
+        assignedTo: { select: { id: true, name: true, email: true } },
+      },
+    });
+
+    return res.status(200).json(updatedTicket);
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
 };
 
 exports.addComment = async (req, res) => {
-    const id = Number(req.params.id);
-    const { text } = req.body;
-    
-    if (!Number.isInteger(id) || id <= 0) return res.status(400).json({ error: 'Invalid ticket id' });
-    if (!text || text.trim() === '') return res.status(400).json({ error: 'Comment text is required' });
+  const id = Number(req.params.id);
+  const { text } = req.body;
 
-    try {
-        if (!req.user || !req.user.role || String(req.user.role).toUpperCase() !== 'WORKER') {
-            return res.status(403).json({ error: 'Only workers can perform this action' });
-        }
+  if (!Number.isInteger(id) || id <= 0) return res.status(400).json({ error: 'Invalid ticket id' });
+  if (!text || text.trim() === '') return res.status(400).json({ error: 'Comment text is required' });
 
-        const ticket = await prisma.ticket.findUnique({
-            where: { id },
-            select: { id: true, assignedToId: true }
-        });
-
-        if (!ticket) return res.status(404).json({ error: 'Ticket not found' });
-        if (ticket.assignedToId !== req.user.id) return res.status(403).json({ error: 'Not authorized to comment on this ticket' });
-
-        const comment = await prisma.comment.create({
-            data: {
-                text,
-                ticketId: id,
-                workerId: req.user.id
-            }
-        });
-
-        return res.status(201).json(comment);
-    } catch (err) {
-        return res.status(500).json({ error: err.message });
+  try {
+    const role = String(req.user.role).toUpperCase();
+    if (role !== 'WORKER' && role !== 'ADMIN') {
+      return res.status(403).json({ error: 'Only workers or admins can perform this action' });
     }
+
+    const ticket = await prisma.ticket.findUnique({
+      where: { id },
+      select: { id: true, assignedToId: true },
+    });
+
+    if (!ticket) return res.status(404).json({ error: 'Ticket not found' });
+    if (role !== 'ADMIN' && ticket.assignedToId !== req.user.id) {
+      return res.status(403).json({ error: 'Not authorized to comment on this ticket' });
+    }
+
+    const workerIdForComment = role === 'ADMIN' ? ticket.assignedToId || req.user.id : req.user.id;
+    if (!workerIdForComment) {
+      return res.status(400).json({ error: 'Ticket has no assignee; assign a worker first' });
+    }
+
+    const comment = await prisma.comment.create({
+      data: {
+        text,
+        ticketId: id,
+        workerId: workerIdForComment,
+      },
+    });
+
+    return res.status(201).json(comment);
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
 };
 
 exports.uploadCompletionPhoto = async (req, res) => {
-    const id = Number(req.params.id);
-    const { photoUrl } = req.body;
+  const id = Number(req.params.id);
+  const { photoUrl } = req.body;
 
-    if (!Number.isInteger(id) || id <= 0) return res.status(400).json({ error: 'Invalid ticket id' });
-    if (!photoUrl || photoUrl.trim() === '') return res.status(400).json({ error: 'photoUrl is required' });
+  if (!Number.isInteger(id) || id <= 0) return res.status(400).json({ error: 'Invalid ticket id' });
+  if (!photoUrl || photoUrl.trim() === '') return res.status(400).json({ error: 'photoUrl is required' });
 
-    try {
-        if (!req.user || !req.user.role || String(req.user.role).toUpperCase() !== 'WORKER') {
-            return res.status(403).json({ error: 'Only workers can perform this action' });
-        }
-
-        const ticket = await prisma.ticket.findUnique({
-            where: { id },
-            select: { id: true, assignedToId: true }
-        });
-
-        if (!ticket) return res.status(404).json({ error: 'Ticket not found' });
-        if (ticket.assignedToId !== req.user.id) return res.status(403).json({ error: 'Not authorized to upload photo for this ticket' });
-
-        const updatedTicket = await prisma.ticket.update({
-            where: { id },
-            data: { completionPhotoUrl: photoUrl },
-            select: {
-                id: true,
-                title: true,
-                description: true,
-                category: true,
-                status: true,
-                completionPhotoUrl: true,
-                createdAt: true,
-                assignedTo: { select: { id: true, name: true, email: true } }
-            }
-        });
-
-        return res.status(200).json(updatedTicket);
-    } catch (err) {
-        return res.status(500).json({ error: err.message });
+  try {
+    const role = String(req.user.role).toUpperCase();
+    if (role !== 'WORKER' && role !== 'ADMIN') {
+      return res.status(403).json({ error: 'Only workers or admins can perform this action' });
     }
+
+    const ticket = await prisma.ticket.findUnique({
+      where: { id },
+      select: { id: true, assignedToId: true },
+    });
+
+    if (!ticket) return res.status(404).json({ error: 'Ticket not found' });
+    if (role !== 'ADMIN' && ticket.assignedToId !== req.user.id) {
+      return res.status(403).json({ error: 'Not authorized to upload photo for this ticket' });
+    }
+
+    const updatedTicket = await prisma.ticket.update({
+      where: { id },
+      data: { completionPhotoUrl: photoUrl },
+      select: {
+        id: true,
+        title: true,
+        description: true,
+        category: true,
+        status: true,
+        completionPhotoUrl: true,
+        createdAt: true,
+        assignedTo: { select: { id: true, name: true, email: true } },
+      },
+    });
+
+    return res.status(200).json(updatedTicket);
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
 };
 
-
-//3. Managerial & Admin APIs 
-//3.1 Facility Manager (Worker Management)
-// Get all workers from database
+// 3.1 Facility Manager (Worker Management)
 exports.getWorkers = async (req, res) => {
-    try {
-        const { data: workers, error } = await prisma
-            .from('users')
-            .select('*')
-            .eq('role', 'worker');
+  try {
+    const workers = await prisma.user.findMany({
+      where: { role: 'WORKER' },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        isActive: true,
+        createdAt: true,
+      },
+      orderBy: { name: 'asc' },
+    });
 
-        if (error) throw error;
-
-        return res.status(200).json({
-            message: "Workers fetched successfully",
-            data: workers
-        });
-    } catch (err) {
-        return res.status(500).json({
-            error: err.message
-        });
-    }
+    return res.status(200).json({
+      message: 'Workers fetched successfully',
+      data: workers,
+    });
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
 };
 
-
-// Update worker status in database
 exports.updateWorkerStatus = async (req, res) => {
-    const { id } = req.params;
-    const { status } = req.body;
+  const userId = Number(req.params.id);
+  const { status } = req.body;
 
-    if (!status) {
-        return res.status(400).json({
-            message: "Status is required"
-        });
+  if (!Number.isInteger(userId) || userId <= 0) {
+    return res.status(400).json({ message: 'Invalid worker id' });
+  }
+
+  if (!status) {
+    return res.status(400).json({ message: 'Status is required' });
+  }
+
+  if (status !== 'active' && status !== 'inactive') {
+    return res.status(400).json({ message: "Status must be 'active' or 'inactive'" });
+  }
+
+  try {
+    const worker = await prisma.user.findFirst({
+      where: { id: userId, role: 'WORKER' },
+    });
+    if (!worker) {
+      return res.status(404).json({ error: 'Worker not found' });
     }
 
-    if (status !== "active" && status !== "inactive") {
-        return res.status(400).json({
-            message: "Status must be 'active' or 'inactive'"
-        });
-    }
+    const updated = await prisma.user.update({
+      where: { id: userId },
+      data: { isActive: status === 'active' },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        isActive: true,
+      },
+    });
 
-    try {
-        const { data, error } = await prisma
-            .from('users')
-            .update({ status })
-            .eq('id', id)
-            .select();
-
-        if (error) throw error;
-
-        return res.status(200).json({
-            message: `Worker ${id} status updated to ${status}`,
-            data: data
-        });
-    } catch (err) {
-        return res.status(500).json({
-            error: err.message
-        });
-    }
+    return res.status(200).json({
+      message: `Worker ${userId} status updated to ${status}`,
+      data: updated,
+    });
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
 };
-//3.2 System Admin (User Management)
 
-// GET /api/admin/users
+// 3.2 System Admin (User Management)
 exports.getAllUsers = async (req, res) => {
   try {
     const users = await prisma.user.findMany({
@@ -495,7 +662,6 @@ exports.getAllUsers = async (req, res) => {
   }
 };
 
-// PUT /api/admin/users/:id/status
 exports.updateUserStatus = async (req, res) => {
   const userId = Number(req.params.id);
   const { isActive } = req.body;
