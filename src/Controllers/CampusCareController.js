@@ -1,12 +1,5 @@
 const prisma = require('../prismaClient');
 
-//1. Authentication & Authorization APIs
-
-//2. Issue Management APIs
-//2.1 For Community Members (CM)
-const jwt = require('jsonwebtoken');
-const bcrypt = require('bcrypt');
-require('dotenv').config();
 
 //1. Authentication & Authorization APIs
 exports.registerUser = async (req, res) => {
@@ -58,8 +51,103 @@ exports.logoutUser = (req, res) => {
     return res.status(200).json({ message: "Logout successful" });
 };
 
+
+exports.forgotPassword = async (req, res) => {
+    const { email } = req.body;
+
+    try {
+        const user = await prisma.user.findUnique({
+            where: { email }
+        });
+
+        if (!user) {
+            return res.status(404).json({ error: "User not found" });
+        }
+
+        // Generate reset token (valid 15 min)
+        const resetToken = jwt.sign(
+            { id: user.id },
+            process.env.JWT_SECRET,
+            { expiresIn: "15m" }
+        );
+
+        // In real system → send email
+        // For milestone → return token
+        return res.status(200).json({
+            message: "Password reset token generated",
+            resetToken
+        });
+
+    } catch (err) {
+        return res.status(500).json({ error: err.message });
+    }
+};
+
+exports.resetPassword = async (req, res) => {
+    const { token, newPassword } = req.body;
+
+    // 1. Validate input
+    if (!token || !newPassword) {
+        return res.status(400).json({
+            error: "Token and new password are required"
+        });
+    }
+
+    try {
+        // 2. Verify token
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+        // 3. Hash new password
+        const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+        // 4. Update user password
+        const updatedUser = await prisma.user.update({
+            where: { id: decoded.id },
+            data: { password: hashedPassword }
+        });
+
+        // 5. Success response
+        return res.status(200).json({
+            message: "Password has been reset successfully"
+        });
+
+    } catch (err) {
+        // Token expired or invalid
+        return res.status(400).json({
+            error: "Invalid or expired reset token"
+        });
+    }
+};
+
 //2. Issue Management APIs
 //2.1 For Community Members (CM)
+const jwt = require('jsonwebtoken');
+const bcrypt = require('bcrypt');
+require('dotenv').config();
+
+
+exports.createIssue = async (req, res) => {
+    const { description, location, category } = req.body;
+
+    try {
+        const newIssue = await prisma.ticket.create({
+            data: {
+                description,
+                location,
+                category,
+                status: "SUBMITTED",
+                userId: req.user.id
+            }
+        });
+
+        return res.status(201).json(newIssue);
+    } catch (err) {
+        return res.status(500).json({ error: err.message });
+    }
+};
+
+
+
 exports.getMyIssues = async (req, res) => {
     try {
         const { data, error } = await prisma
@@ -99,7 +187,38 @@ exports.getIssueStatus = async (req, res) => {
     }
 };
 
+exports.updateIssueStatus = async (req, res) => {
+    const { id } = req.params;
+    const { status } = req.body;
 
+    try {
+        const updated = await prisma.ticket.update({
+            where: { id: Number(id) },
+            data: { status }
+        });
+
+        return res.status(200).json(updated);
+    } catch (err) {
+        return res.status(500).json({ error: err.message });
+    }
+};
+
+
+exports.deleteIssue = async (req, res) => {
+    const { id } = req.params;
+
+    try {
+        await prisma.ticket.delete({
+            where: { id: Number(id) }
+        });
+
+        return res.status(200).json({
+            message: "Issue deleted successfully"
+        });
+    } catch (err) {
+        return res.status(500).json({ error: err.message });
+    }
+};
 
 
 
