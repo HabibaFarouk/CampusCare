@@ -346,7 +346,6 @@ exports.deleteIssue = async (req, res) => {
   }
 };
 
-
 // 2.2 For Facility Managers (FM)
 exports.getAllIssues = async (req, res) => {
   try {
