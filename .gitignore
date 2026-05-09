@@ -1,5 +1,8 @@
+# Root or Global ignores
 node_modules/
 .expo/
-dist/
-npm-debug.log*
 package-lock.json
+
+# Backend specific
+Backend/.env
+Backend/node_modules/
