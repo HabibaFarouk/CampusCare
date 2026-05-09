@@ -301,42 +301,12 @@ exports.getIssueStatus = async (req, res) => {
 exports.updateIssueStatus = async (req, res) => {
   const id = Number(req.params.id);
   const { status } = req.body;
+
   if (!Number.isInteger(id) || id <= 0) return res.status(400).json({ error: 'Invalid ticket id' });
 
   if (!status || !VALID_STATUSES.includes(String(status).toUpperCase())) {
     return res.status(400).json({ error: `Invalid status. Use one of: ${VALID_STATUSES.join(', ')}` });
   }
-    const { id } = req.params;
-    const { status } = req.body;
-
-    try {
-        const updated = await prisma.ticket.update({
-            where: { id: Number(id) },
-            data: { status }
-        });
-
-        return res.status(200).json(updated);
-    } catch (err) {
-        return res.status(500).json({ error: err.message });
-    }
-};
-
-
-exports.deleteIssue = async (req, res) => {
-    const { id } = req.params;
-
-    try {
-        await prisma.ticket.delete({
-            where: { id: Number(id) }
-        });
-
-        return res.status(200).json({
-            message: "Issue deleted successfully"
-        });
-    } catch (err) {
-        return res.status(500).json({ error: err.message });
-    }
-};
 
   try {
     const updatedTicket = await prisma.ticket.update({
@@ -353,7 +323,29 @@ exports.deleteIssue = async (req, res) => {
       return res.status(404).json({ error: 'Ticket not found' });
     }
     return res.status(500).json({ error: err.message });
-  };
+  }
+};
+
+
+exports.deleteIssue = async (req, res) => {
+  const id = Number(req.params.id);
+  
+  if (!Number.isInteger(id) || id <= 0) return res.status(400).json({ error: 'Invalid ticket id' });
+
+  try {
+    await prisma.ticket.delete({
+      where: { id }
+    });
+
+    return res.status(200).json({ message: "Issue deleted successfully" });
+  } catch (err) {
+    if (err.code === 'P2025') {
+      return res.status(404).json({ error: 'Ticket not found' });
+    }
+    return res.status(500).json({ error: err.message });
+  }
+};
+
 
 // 2.2 For Facility Managers (FM)
 exports.getAllIssues = async (req, res) => {
@@ -449,24 +441,6 @@ exports.closeIssue = async (req, res) => {
       data: { status: 'RESOLVED' },
     });
     return res.status(200).json(updatedTicket);
-  } catch (err) {
-    if (err.code === 'P2025') {
-      return res.status(404).json({ error: 'Ticket not found' });
-    }
-    return res.status(500).json({ error: err.message });
-  }
-};
-
-exports.deleteIssue = async (req, res) => {
-  const id = Number(req.params.id);
-  if (!Number.isInteger(id) || id <= 0) return res.status(400).json({ error: 'Invalid ticket id' });
-
-  try {
-    await prisma.$transaction([
-      prisma.comment.deleteMany({ where: { ticketId: id } }),
-      prisma.ticket.delete({ where: { id } }),
-    ]);
-    return res.status(200).json({ message: 'Issue successfully deleted' });
   } catch (err) {
     if (err.code === 'P2025') {
       return res.status(404).json({ error: 'Ticket not found' });
@@ -800,5 +774,88 @@ exports.updateUserStatus = async (req, res) => {
     }
 
     return res.status(500).json({ error: 'Failed to update user status' });
+  }
+};
+
+
+// ==========================================================
+// NEW FEATURES: Dashboards, Workloads, and Admin Updates
+// ==========================================================
+
+// Dashboard summary (KPIs) - For FM & Admin
+exports.getDashboardKPIs = async (req, res) => {
+  try {
+    const totalIssues = await prisma.ticket.count();
+    const resolvedIssues = await prisma.ticket.count({ where: { status: 'RESOLVED' } });
+    const submittedIssues = await prisma.ticket.count({ where: { status: 'SUBMITTED' } });
+    const inProgressIssues = await prisma.ticket.count({ where: { status: 'IN_PROGRESS' } });
+    const activeWorkers = await prisma.user.count({ where: { role: 'WORKER', isActive: true } });
+
+    return res.status(200).json({
+      totalIssues,
+      resolvedIssues,
+      submittedIssues,
+      inProgressIssues,
+      activeWorkers
+    });
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
+};
+
+// Worker availability/workload tracking - For FM
+exports.getWorkerWorkloads = async (req, res) => {
+  try {
+    // Fetches all workers and counts how many active tickets they have
+    const workers = await prisma.user.findMany({
+      where: { role: 'WORKER', isActive: true },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        _count: {
+          select: {
+            assignedTickets: {
+              where: { status: { in: ['ASSIGNED', 'IN_PROGRESS'] } }
+            }
+          }
+        }
+      }
+    });
+
+    // Format the response to be easy to read
+    const workloadData = workers.map(w => ({
+      workerId: w.id,
+      name: w.name,
+      activeTasksCount: w._count.assignedTickets
+    }));
+
+    return res.status(200).json(workloadData);
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
+};
+
+// Role update endpoint - For Admin only
+exports.updateUserRole = async (req, res) => {
+  const userId = Number(req.params.id);
+  const { role } = req.body;
+
+  if (!Number.isInteger(userId) || userId <= 0) return res.status(400).json({ error: 'Invalid user id' });
+
+  const parsedRole = parseRole(role); // Using your existing helper function!
+  if (!parsedRole) return res.status(400).json({ error: 'Invalid role provided' });
+
+  try {
+    const updatedUser = await prisma.user.update({
+      where: { id: userId },
+      data: { role: parsedRole },
+      select: { id: true, name: true, role: true }
+    });
+
+    return res.status(200).json({ message: "Role updated successfully", user: updatedUser });
+  } catch (error) {
+    if (error.code === 'P2025') return res.status(404).json({ error: 'User not found' });
+    return res.status(500).json({ error: 'Failed to update user role' });
   }
 };

@@ -14,6 +14,8 @@ model User {
   password  String
   role      Role
   isActive  Boolean  @default(true)
+  notifications Notification[]
+  auditLogs     AuditLog[]
   tickets   Ticket[] @relation("UserTickets")
   assigned  Ticket[] @relation("AssignedTickets")
   comments  Comment[] @relation("UserComments")
@@ -33,6 +35,7 @@ model Ticket {
   createdById       Int
   assignedTo        User?     @relation("AssignedTickets", fields: [assignedToId], references: [id])
   assignedToId      Int?
+  auditLogs     AuditLog[]
   comments          Comment[]
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
@@ -45,6 +48,29 @@ model Comment {
   ticketId  Int
   worker    User     @relation("UserComments", fields: [workerId], references: [id])
   workerId  Int
+  createdAt DateTime @default(now())
+}
+
+// ADD THESE TO SCHEMA.PRISMA FIRST
+
+model Notification {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id])
+  message   String
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+
+model AuditLog {
+  id        Int      @id @default(autoincrement())
+  ticketId  Int
+  ticket    Ticket   @relation(fields: [ticketId], references: [id])
+  changedById Int
+  changedBy User     @relation(fields: [changedById], references: [id])
+  action    String   // Example: "STATUS_CHANGED", "ASSIGNED_WORKER"
+  oldValue  String?
+  newValue  String?
   createdAt DateTime @default(now())
 }
 
