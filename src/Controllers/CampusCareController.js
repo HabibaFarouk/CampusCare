@@ -2,6 +2,7 @@ const prisma = require('../prismaClient');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcrypt');
 const { tokenBlacklist } = require('../middleware/auth');
+require('dotenv').config();
 
 const VALID_STATUSES = ['SUBMITTED', 'ASSIGNED', 'IN_PROGRESS', 'RESOLVED', 'CANCELLED'];
 const VALID_CATEGORIES = ['MAINTENANCE', 'CLEANLINESS', 'SUSTAINABILITY'];
@@ -130,41 +131,6 @@ exports.logout = (req, res) => {
   res.status(200).json({ message: 'Logged out successfully' });
 };
 
-// Community member: create issue
-exports.createIssue = async (req, res) => {
-  const { title, description, category, location, imageUrl } = req.body;
-
-  if (!title || !description || !category || !location) {
-    return res.status(400).json({ error: 'title, description, category, and location are required' });
-  }
-
-  const cat = String(category).toUpperCase();
-  if (!VALID_CATEGORIES.includes(cat)) {
-    return res.status(400).json({ error: `Invalid category. Use one of: ${VALID_CATEGORIES.join(', ')}` });
-  }
-
-  try {
-    const ticket = await prisma.ticket.create({
-      data: {
-        title,
-        description,
-        category: cat,
-        location,
-        imageUrl: imageUrl || null,
-        createdById: req.user.id,
-      },
-      include: {
-        createdBy: { select: { id: true, name: true, email: true } },
-      },
-    });
-
-    return res.status(201).json(ticket);
-  } catch (err) {
-    return res.status(500).json({ error: err.message });
-  }
-};
-
-// 2.1 For Community Members (CM)
 
 exports.forgotPassword = async (req, res) => {
     const { email } = req.body;
@@ -235,30 +201,39 @@ exports.resetPassword = async (req, res) => {
 
 //2. Issue Management APIs
 //2.1 For Community Members (CM)
-const jwt = require('jsonwebtoken');
-const bcrypt = require('bcrypt');
-require('dotenv').config();
-
-
 exports.createIssue = async (req, res) => {
-    const { description, location, category } = req.body;
+  const { title, description, category, location, imageUrl } = req.body;
 
-    try {
-        const newIssue = await prisma.ticket.create({
-            data: {
-                description,
-                location,
-                category,
-                status: "SUBMITTED",
-                userId: req.user.id
-            }
-        });
+  if (!title || !description || !category || !location) {
+    return res.status(400).json({ error: 'title, description, category, and location are required' });
+  }
 
-        return res.status(201).json(newIssue);
-    } catch (err) {
-        return res.status(500).json({ error: err.message });
-    }
+  const cat = String(category).toUpperCase();
+  if (!VALID_CATEGORIES.includes(cat)) {
+    return res.status(400).json({ error: `Invalid category. Use one of: ${VALID_CATEGORIES.join(', ')}` });
+  }
+
+  try {
+    const ticket = await prisma.ticket.create({
+      data: {
+        title,
+        description,
+        category: cat,
+        location,
+        imageUrl: imageUrl || null,
+        createdById: req.user.id,
+      },
+      include: {
+        createdBy: { select: { id: true, name: true, email: true } },
+      },
+    });
+
+    return res.status(201).json(ticket);
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
 };
+
 
 
 
@@ -322,6 +297,63 @@ exports.getIssueStatus = async (req, res) => {
     return res.status(500).json({ error: err.message });
   }
 };
+
+exports.updateIssueStatus = async (req, res) => {
+  const id = Number(req.params.id);
+  const { status } = req.body;
+  if (!Number.isInteger(id) || id <= 0) return res.status(400).json({ error: 'Invalid ticket id' });
+
+  if (!status || !VALID_STATUSES.includes(String(status).toUpperCase())) {
+    return res.status(400).json({ error: `Invalid status. Use one of: ${VALID_STATUSES.join(', ')}` });
+  }
+    const { id } = req.params;
+    const { status } = req.body;
+
+    try {
+        const updated = await prisma.ticket.update({
+            where: { id: Number(id) },
+            data: { status }
+        });
+
+        return res.status(200).json(updated);
+    } catch (err) {
+        return res.status(500).json({ error: err.message });
+    }
+};
+
+
+exports.deleteIssue = async (req, res) => {
+    const { id } = req.params;
+
+    try {
+        await prisma.ticket.delete({
+            where: { id: Number(id) }
+        });
+
+        return res.status(200).json({
+            message: "Issue deleted successfully"
+        });
+    } catch (err) {
+        return res.status(500).json({ error: err.message });
+    }
+};
+
+  try {
+    const updatedTicket = await prisma.ticket.update({
+      where: { id },
+      data: { status: String(status).toUpperCase() },
+      include: {
+        createdBy: { select: { name: true } },
+        assignedTo: { select: { name: true } },
+      },
+    });
+    return res.status(200).json(updatedTicket);
+  } catch (err) {
+    if (err.code === 'P2025') {
+      return res.status(404).json({ error: 'Ticket not found' });
+    }
+    return res.status(500).json({ error: err.message });
+  };
 
 // 2.2 For Facility Managers (FM)
 exports.getAllIssues = async (req, res) => {
@@ -396,64 +428,6 @@ exports.assignIssueToWorker = async (req, res) => {
       include: {
         createdBy: { select: { name: true } },
         assignedTo: { select: { name: true, email: true } },
-      },
-    });
-    return res.status(200).json(updatedTicket);
-  } catch (err) {
-    if (err.code === 'P2025') {
-      return res.status(404).json({ error: 'Ticket not found' });
-    }
-    return res.status(500).json({ error: err.message });
-  }
-};
-
-exports.updateIssueStatus = async (req, res) => {
-  const id = Number(req.params.id);
-  const { status } = req.body;
-  if (!Number.isInteger(id) || id <= 0) return res.status(400).json({ error: 'Invalid ticket id' });
-
-  if (!status || !VALID_STATUSES.includes(String(status).toUpperCase())) {
-    return res.status(400).json({ error: `Invalid status. Use one of: ${VALID_STATUSES.join(', ')}` });
-  }
-    const { id } = req.params;
-    const { status } = req.body;
-
-    try {
-        const updated = await prisma.ticket.update({
-            where: { id: Number(id) },
-            data: { status }
-        });
-
-        return res.status(200).json(updated);
-    } catch (err) {
-        return res.status(500).json({ error: err.message });
-    }
-};
-
-
-exports.deleteIssue = async (req, res) => {
-    const { id } = req.params;
-
-    try {
-        await prisma.ticket.delete({
-            where: { id: Number(id) }
-        });
-
-        return res.status(200).json({
-            message: "Issue deleted successfully"
-        });
-    } catch (err) {
-        return res.status(500).json({ error: err.message });
-    }
-};
-
-  try {
-    const updatedTicket = await prisma.ticket.update({
-      where: { id },
-      data: { status: String(status).toUpperCase() },
-      include: {
-        createdBy: { select: { name: true } },
-        assignedTo: { select: { name: true } },
       },
     });
     return res.status(200).json(updatedTicket);
@@ -700,7 +674,7 @@ exports.uploadCompletionPhoto = async (req, res) => {
   }
 };
 
-// 3.1 Facility Manager (Worker Management)
+// 3.1 Facility Manager
 exports.getWorkers = async (req, res) => {
   try {
     const workers = await prisma.user.findMany({
