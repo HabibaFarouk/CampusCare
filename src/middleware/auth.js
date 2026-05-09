@@ -1,44 +1,35 @@
 const jwt = require('jsonwebtoken');
 
 // Verify JWT and attach payload to req.user
-function authenticate(req, res, next) {
-  try {
-    const authHeader = req.headers.authorization || req.headers.Authorization;
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return res.status(401).json({ error: 'Missing or malformed Authorization header' });
-    }
+const tokenBlacklist = new Set(); 
 
-    const token = authHeader.split(' ')[1];
-    if (!token) return res.status(401).json({ error: 'Missing token' });
-
-    const secret = process.env.JWT_SECRET;
-    if (!secret) return res.status(500).json({ error: 'JWT secret not configured' });
-
-    let payload;
+const authenticate = (req, res, next) => {
     try {
-      payload = jwt.verify(token, secret);
+        const authHeader = req.headers.authorization;
+        if (!authHeader?.startsWith('Bearer ')) {
+            return res.status(401).json({ error: 'Access denied. No token provided.' });
+        }
+
+        const token = authHeader.split(' ')[1];
+
+        // Check if token was revoked (Logout)
+        if (tokenBlacklist.has(token)) {
+            return res.status(401).json({ error: 'Token has been revoked. Please login again.' });
+        }
+
+        const decoded = jwt.verify(token, process.env.JWT_ACCESS_SECRET);
+        
+        req.user = {
+            id: decoded.id || decoded.userId,
+            role: String(decoded.role || 'USER').toUpperCase()
+        };
+
+        next();
     } catch (err) {
-      return res.status(401).json({ error: 'Invalid or expired token' });
+        const message = err.name === 'TokenExpiredError' ? 'Token expired' : 'Invalid token';
+        return res.status(401).json({ error: message });
     }
-
-    // Expecting token payload to contain user id and role
-    if (!payload || (!payload.id && !payload.userId)) {
-      return res.status(401).json({ error: 'Invalid token payload' });
-    }
-
-    // Normalize id and role onto req.user
-    req.user = {
-      id: payload.id || payload.userId,
-      role: payload.role || payload.user_role || payload.userRole,
-      ...payload
-    };
-
-    next();
-  } catch (err) {
-    next(err);
-  }
-}
-
+};
 // authorize accepts allowed roles, e.g. authorize('WORKER','ADMIN')
 function authorize(...allowedRoles) {
   const normalized = allowedRoles.map(r => String(r).toUpperCase());
@@ -57,4 +48,4 @@ function authorize(...allowedRoles) {
   };
 }
 
-module.exports = { authenticate, authorize };
+module.exports = { authenticate, authorize, tokenBlacklist };
