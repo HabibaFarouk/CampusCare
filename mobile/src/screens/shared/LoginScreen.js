@@ -86,6 +86,15 @@ const LoginScreen = ({ navigation }) => {
               style={styles.loginButton}
             />
 
+            <View style={styles.forgotPasswordContainer}>
+              <Button
+                title="Forgot Password?"
+                onPress={() => navigation.navigate('ForgotPassword')}
+                variant="text"
+                size="sm"
+              />
+            </View>
+
             <View style={styles.footerLinks}>
               <Button
                 title="Don't have an account? Sign Up"
@@ -133,6 +142,10 @@ const styles = StyleSheet.create({
   },
   loginButton: {
     marginTop: 20,
+  },
+  forgotPasswordContainer: {
+    alignItems: 'center',
+    marginTop: 8,
   },
   footerLinks: {
     marginTop: 16,

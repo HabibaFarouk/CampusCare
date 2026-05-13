@@ -1,14 +1,17 @@
 import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { useAuth } from '../auth/AuthContext';
-import { ActivityIndicator, View } from 'react-native';
+import { ActivityIndicator, View, Text } from 'react-native';
 import RoleGate from '../auth/RoleGate';
 
 // Shared screens
 import LoginScreen from '../screens/shared/LoginScreen';
 import RegisterScreen from '../screens/shared/RegisterScreen';
 import IssueDetailScreen from '../screens/shared/IssueDetailScreen';
+import ProfileScreen from '../screens/shared/ProfileScreen';
+import ForgotPasswordScreen from '../screens/shared/ForgotPasswordScreen';
 
 // Member screens
 import MyIssuesScreen from '../screens/member/MyIssuesScreen';
@@ -25,6 +28,7 @@ import WorkerMgmtScreen from '../screens/manager/WorkerMgmtScreen';
 import UserMgmtScreen from '../screens/admin/UserMgmtScreen';
 
 const Stack = createNativeStackNavigator();
+const Tab = createBottomTabNavigator();
 
 const AuthStack = () => (
   <Stack.Navigator
@@ -34,107 +38,249 @@ const AuthStack = () => (
   >
     <Stack.Screen name="Login" component={LoginScreen} />
     <Stack.Screen name="Register" component={RegisterScreen} />
+    <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
   </Stack.Navigator>
+);
+
+// Member Tab Navigation
+const MemberTabs = () => (
+  <Tab.Navigator
+    screenOptions={{
+      headerShown: true,
+      tabBarActiveTintColor: '#007AFF',
+      tabBarInactiveTintColor: '#999',
+      tabBarStyle: {
+        backgroundColor: '#fff',
+        borderTopWidth: 1,
+        borderTopColor: '#e0e0e0',
+      },
+    }}
+  >
+    <Tab.Screen
+      name="MyIssuesTab"
+      component={MyIssuesScreen}
+      options={{
+        title: 'My Issues',
+        tabBarLabel: 'Issues',
+        tabBarIcon: ({ color, size }) => <Text style={{ fontSize: size, color }}>📋</Text>,
+      }}
+    />
+    <Tab.Screen
+      name="ReportIssueTab"
+      component={ReportIssueScreen}
+      options={{
+        title: 'Report Issue',
+        tabBarLabel: 'Report',
+        tabBarIcon: ({ color, size }) => <Text style={{ fontSize: size, color }}>➕</Text>,
+      }}
+    />
+    <Tab.Screen
+      name="ProfileTab"
+      component={ProfileScreen}
+      options={{
+        title: 'Profile',
+        tabBarLabel: 'Profile',
+        tabBarIcon: ({ color, size }) => <Text style={{ fontSize: size, color }}>👤</Text>,
+      }}
+    />
+  </Tab.Navigator>
 );
 
 const MemberStack = () => (
-  <Stack.Navigator>
+  <Stack.Navigator
+    screenOptions={{
+      headerShown: false,
+    }}
+  >
     <Stack.Screen
-      name="MyIssues"
-      component={MyIssuesScreen}
-      options={{ title: 'My Issues' }}
-    />
-    <Stack.Screen
-      name="ReportIssue"
-      component={ReportIssueScreen}
-      options={{ title: 'Report Issue' }}
+      name="MemberTabs"
+      component={MemberTabs}
     />
     <Stack.Screen
       name="IssueDetail"
       component={IssueDetailScreen}
-      options={{ title: 'Issue Details' }}
+      options={{ headerShown: true, title: 'Issue Details' }}
     />
   </Stack.Navigator>
+);
+
+// Worker Tab Navigation
+const WorkerTabs = () => (
+  <Tab.Navigator
+    screenOptions={{
+      headerShown: true,
+      tabBarActiveTintColor: '#007AFF',
+      tabBarInactiveTintColor: '#999',
+      tabBarStyle: {
+        backgroundColor: '#fff',
+        borderTopWidth: 1,
+        borderTopColor: '#e0e0e0',
+      },
+    }}
+  >
+    <Tab.Screen
+      name="AssignedTasksTab"
+      component={AssignedTasksScreen}
+      options={{
+        title: 'Assigned Tasks',
+        tabBarLabel: 'Tasks',
+        tabBarIcon: ({ color, size }) => <Text style={{ fontSize: size, color }}>🔧</Text>,
+      }}
+    />
+    <Tab.Screen
+      name="ProfileTab"
+      component={ProfileScreen}
+      options={{
+        title: 'Profile',
+        tabBarLabel: 'Profile',
+        tabBarIcon: ({ color, size }) => <Text style={{ fontSize: size, color }}>👤</Text>,
+      }}
+    />
+  </Tab.Navigator>
 );
 
 const WorkerStack = () => (
-  <Stack.Navigator>
+  <Stack.Navigator
+    screenOptions={{
+      headerShown: false,
+    }}
+  >
     <Stack.Screen
-      name="AssignedTasks"
-      component={AssignedTasksScreen}
-      options={{ title: 'Assigned Tasks' }}
+      name="WorkerTabs"
+      component={WorkerTabs}
     />
     <Stack.Screen
       name="IssueDetail"
       component={IssueDetailScreen}
-      options={{ title: 'Task Details' }}
+      options={{ headerShown: true, title: 'Task Details' }}
     />
   </Stack.Navigator>
+);
+
+// Manager Tab Navigation
+const ManagerTabs = () => (
+  <Tab.Navigator
+    screenOptions={{
+      headerShown: true,
+      tabBarActiveTintColor: '#007AFF',
+      tabBarInactiveTintColor: '#999',
+      tabBarStyle: {
+        backgroundColor: '#fff',
+        borderTopWidth: 1,
+        borderTopColor: '#e0e0e0',
+      },
+    }}
+  >
+    <Tab.Screen
+      name="FMDashboardTab"
+      component={FMDashboard}
+      options={{
+        title: 'Dashboard',
+        tabBarLabel: 'Dashboard',
+        tabBarIcon: ({ color, size }) => <Text style={{ fontSize: size, color }}>📊</Text>,
+      }}
+    />
+    <Tab.Screen
+      name="WorkerMgmtTab"
+      component={WorkerMgmtScreen}
+      options={{
+        title: 'Worker Management',
+        tabBarLabel: 'Workers',
+        tabBarIcon: ({ color, size }) => <Text style={{ fontSize: size, color }}>👷</Text>,
+      }}
+    />
+    <Tab.Screen
+      name="ProfileTab"
+      component={ProfileScreen}
+      options={{
+        title: 'Profile',
+        tabBarLabel: 'Profile',
+        tabBarIcon: ({ color, size }) => <Text style={{ fontSize: size, color }}>👤</Text>,
+      }}
+    />
+  </Tab.Navigator>
 );
 
 const ManagerStack = () => (
-  <Stack.Navigator>
+  <Stack.Navigator
+    screenOptions={{
+      headerShown: false,
+    }}
+  >
     <Stack.Screen
-      name="FMDashboard"
-      component={FMDashboard}
-      options={{ title: 'Dashboard' }}
-    />
-    <Stack.Screen
-      name="WorkerMgmt"
-      component={WorkerMgmtScreen}
-      options={{ title: 'Worker Management' }}
+      name="ManagerTabs"
+      component={ManagerTabs}
     />
     <Stack.Screen
       name="IssueDetail"
       component={IssueDetailScreen}
-      options={{ title: 'Issue Details' }}
+      options={{ headerShown: true, title: 'Issue Details' }}
     />
   </Stack.Navigator>
 );
 
-const AdminStack = () => (
-  <Stack.Navigator>
-    <Stack.Screen
-      name="UserMgmt"
+// Admin Tab Navigation
+const AdminTabs = () => (
+  <Tab.Navigator
+    screenOptions={{
+      headerShown: true,
+      tabBarActiveTintColor: '#007AFF',
+      tabBarInactiveTintColor: '#999',
+      tabBarStyle: {
+        backgroundColor: '#fff',
+        borderTopWidth: 1,
+        borderTopColor: '#e0e0e0',
+      },
+    }}
+  >
+    <Tab.Screen
+      name="UserMgmtTab"
       component={UserMgmtScreen}
-      options={{ title: 'User Management' }}
+      options={{
+        title: 'User Management',
+        tabBarLabel: 'Users',
+        tabBarIcon: ({ color, size }) => <Text style={{ fontSize: size, color }}>👥</Text>,
+      }}
+    />
+    <Tab.Screen
+      name="ProfileTab"
+      component={ProfileScreen}
+      options={{
+        title: 'Profile',
+        tabBarLabel: 'Profile',
+        tabBarIcon: ({ color, size }) => <Text style={{ fontSize: size, color }}>👤</Text>,
+      }}
+    />
+  </Tab.Navigator>
+);
+
+const AdminStack = () => (
+  <Stack.Navigator
+    screenOptions={{
+      headerShown: false,
+    }}
+  >
+    <Stack.Screen
+      name="AdminTabs"
+      component={AdminTabs}
     />
   </Stack.Navigator>
 );
 
 const AppStack = ({ user }) => {
-  return (
-    <Stack.Navigator screenOptions={{ headerShown: true }}>
-      {user?.role === 'MEMBER' && (
-        <Stack.Screen
-          name="MemberApp"
-          component={MemberStack}
-          options={{ headerShown: false }}
-        />
-      )}
-      {user?.role === 'WORKER' && (
-        <Stack.Screen
-          name="WorkerApp"
-          component={WorkerStack}
-          options={{ headerShown: false }}
-        />
-      )}
-      {user?.role === 'FACILITY_MANAGER' && (
-        <Stack.Screen
-          name="ManagerApp"
-          component={ManagerStack}
-          options={{ headerShown: false }}
-        />
-      )}
-      {user?.role === 'ADMIN' && (
-        <Stack.Screen
-          name="AdminApp"
-          component={AdminStack}
-          options={{ headerShown: false }}
-        />
-      )}
-    </Stack.Navigator>
-  );
+  if (user?.role === 'MEMBER') {
+    return <MemberStack />;
+  }
+  if (user?.role === 'WORKER') {
+    return <WorkerStack />;
+  }
+  if (user?.role === 'FACILITY_MANAGER') {
+    return <ManagerStack />;
+  }
+  if (user?.role === 'ADMIN') {
+    return <AdminStack />;
+  }
+  return null;
 };
 
 const AppNavigator = () => {

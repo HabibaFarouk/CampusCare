@@ -8,12 +8,14 @@ import {
   Platform,
   Text,
   Picker,
+  TouchableOpacity,
 } from 'react-native';
 import Input from '../../components/common/Input';
 import Button from '../../components/common/Button';
 import PhotoUploader from '../../components/issues/PhotoUploader';
 import { VALID_CATEGORIES } from '../../utils/constants';
 import issueApi from '../../api/issueApi';
+import { useNotification } from '../../utils/NotificationContext';
 
 const ReportIssueScreen = ({ navigation }) => {
   const [formData, setFormData] = useState({
@@ -25,6 +27,13 @@ const ReportIssueScreen = ({ navigation }) => {
   const [photos, setPhotos] = useState([]);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
+  const [showCategoryPicker, setShowCategoryPicker] = useState(false);
+  const { showError, showSuccess } = useNotification();
+
+  const categories = Object.keys(VALID_CATEGORIES).map(key => ({
+    label: key.replace('_', ' '),
+    value: VALID_CATEGORIES[key]
+  }));
 
   const handleSubmit = async () => {
     try {
@@ -33,14 +42,15 @@ const ReportIssueScreen = ({ navigation }) => {
 
       // Validation
       if (!formData.title.trim()) {
-        setErrors((prev) => ({ ...prev, title: 'Title is required' }));
+        const titleError = 'Title is required';
+        setErrors((prev) => ({ ...prev, title: titleError }));
+        showError(titleError);
         return;
       }
       if (!formData.description.trim()) {
-        setErrors((prev) => ({
-          ...prev,
-          description: 'Description is required',
-        }));
+        const descError = 'Description is required';
+        setErrors((prev) => ({ ...prev, description: descError }));
+        showError(descError);
         return;
       }
 
@@ -50,10 +60,11 @@ const ReportIssueScreen = ({ navigation }) => {
       };
 
       await issueApi.createIssue(issueData);
-      Alert.alert('Success', 'Issue reported successfully');
-      navigation.goBack();
+      showSuccess('Issue reported successfully');
+      setTimeout(() => navigation.goBack(), 1500);
     } catch (error) {
-      Alert.alert('Error', error.response?.data?.message || error.message);
+      const errorMsg = error.response?.data?.message || error.response?.data?.error || error.message || 'Failed to report issue';
+      showError(errorMsg);
     } finally {
       setLoading(false);
     }
@@ -81,14 +92,42 @@ const ReportIssueScreen = ({ navigation }) => {
               error={errors.title}
             />
 
-            <Input
-              label="Category"
-              placeholder="Select category"
-              value={formData.category}
-              onChangeText={(value) =>
-                setFormData({ ...formData, category: value })
-              }
-            />
+            <View style={styles.fieldContainer}>
+              <Text style={styles.label}>Category</Text>
+              <TouchableOpacity
+                style={styles.categoryButton}
+                onPress={() => setShowCategoryPicker(!showCategoryPicker)}
+              >
+                <Text style={styles.categoryButtonText}>
+                  {formData.category.replace('_', ' ')}
+                </Text>
+                <Text style={styles.categoryArrow}>▼</Text>
+              </TouchableOpacity>
+              
+              {showCategoryPicker && (
+                <View style={styles.categoryDropdown}>
+                  {categories.map((cat) => (
+                    <TouchableOpacity
+                      key={cat.value}
+                      style={styles.categoryOption}
+                      onPress={() => {
+                        setFormData({ ...formData, category: cat.value });
+                        setShowCategoryPicker(false);
+                      }}
+                    >
+                      <Text
+                        style={[
+                          styles.categoryOptionText,
+                          formData.category === cat.value && styles.categoryOptionTextSelected,
+                        ]}
+                      >
+                        {cat.label}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              )}
+            </View>
 
             <Input
               label="Location"
@@ -159,6 +198,67 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     borderRadius: 12,
     padding: 16,
+  },
+  fieldContainer: {
+    marginBottom: 16,
+    zIndex: 10,
+  },
+  label: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#333333',
+    marginBottom: 8,
+  },
+  categoryButton: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    backgroundColor: '#f9f9f9',
+  },
+  categoryButtonText: {
+    fontSize: 14,
+    color: '#333333',
+    flex: 1,
+  },
+  categoryArrow: {
+    fontSize: 10,
+    color: '#999',
+  },
+  categoryDropdown: {
+    position: 'absolute',
+    top: 56,
+    left: 0,
+    right: 0,
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 8,
+    marginTop: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 5,
+    zIndex: 100,
+  },
+  categoryOption: {
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+  },
+  categoryOptionText: {
+    fontSize: 14,
+    color: '#666666',
+  },
+  categoryOptionTextSelected: {
+    color: '#007AFF',
+    fontWeight: '600',
   },
   submitButton: {
     marginTop: 20,

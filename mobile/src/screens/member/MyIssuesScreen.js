@@ -10,15 +10,20 @@ import {
 import IssueCard from '../../components/issues/IssueCard';
 import Button from '../../components/common/Button';
 import issueApi from '../../api/issueApi';
+import { useNotification } from '../../utils/NotificationContext';
 
 const MyIssuesScreen = ({ navigation }) => {
   const [issues, setIssues] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('ALL');
+  const { showError, showSuccess } = useNotification();
 
   useEffect(() => {
-    loadIssues();
-  }, [filter]);
+    const unsubscribe = navigation.addListener('focus', () => {
+      loadIssues();
+    });
+    return unsubscribe;
+  }, [navigation, filter]);
 
   const loadIssues = async () => {
     try {
@@ -32,13 +37,9 @@ const MyIssuesScreen = ({ navigation }) => {
       setIssues(issuesList);
       
     } catch (error) {
-      // 1. Force the terminal to log the EXACT backend error
-      console.log("MY ISSUES FETCH ERROR:", error.response?.status, error.response?.data || error.message);
-      
-      // 2. Show the real error on the phone screen instead of a generic message
       const errorMessage = error.response?.data?.error || error.message || 'Failed to load issues';
-      Alert.alert('Fetch Error', errorMessage);
-      
+      console.log("MY ISSUES FETCH ERROR:", error.response?.status, errorMessage);
+      showError(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -64,7 +65,7 @@ const MyIssuesScreen = ({ navigation }) => {
   return (
     <View style={styles.container}>
       <View style={styles.filterContainer}>
-        {['ALL', 'SUBMITTED', 'IN_PROGRESS', 'RESOLVED'].map((status) => (
+        {['ALL', 'SUBMITTED', 'ASSIGNED', 'IN_PROGRESS', 'RESOLVED'].map((status) => (
           <Button
             key={status}
             title={status}
@@ -80,7 +81,6 @@ const MyIssuesScreen = ({ navigation }) => {
         <FlatList
           data={issues}
           renderItem={renderIssue}
-          // 3. Convert the Prisma Integer ID to a String to prevent FlatList crashes
           keyExtractor={(item) => item.id.toString()}
           contentContainerStyle={styles.list}
         />
@@ -89,7 +89,7 @@ const MyIssuesScreen = ({ navigation }) => {
           <Text style={styles.emptyText}>No issues found</Text>
           <Button
             title="Create New Issue"
-            onPress={() => navigation.navigate('ReportIssue')}
+            onPress={() => navigation.navigate('ReportIssueTab')}
           />
         </View>
       )}
@@ -97,7 +97,7 @@ const MyIssuesScreen = ({ navigation }) => {
       <View style={styles.fab}>
         <Button
           title="+ Report Issue"
-          onPress={() => navigation.navigate('ReportIssue')}
+          onPress={() => navigation.navigate('ReportIssueTab')}
           size="lg"
         />
       </View>

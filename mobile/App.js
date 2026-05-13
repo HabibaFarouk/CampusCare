@@ -1,6 +1,8 @@
 import { StatusBar } from 'expo-status-bar';
 import { AuthProvider } from './src/auth/AuthContext';
+import { NotificationProvider } from './src/utils/NotificationContext';
 import AppNavigator from './src/navigation/AppNavigator';
+import NotificationDisplay from './src/components/common/NotificationDisplay';
 import { colors } from './src/theme';
 
 // Two navigators when the user is logged in:
@@ -10,8 +12,11 @@ import { colors } from './src/theme';
 export default function App() {
   return (
     <AuthProvider>
-      <StatusBar style="auto" />
-      <AppNavigator />
+      <NotificationProvider>
+        <StatusBar style="auto" />
+        <AppNavigator />
+        <NotificationDisplay />
+      </NotificationProvider>
     </AuthProvider>
   );
 }
