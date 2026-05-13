@@ -1,6 +1,5 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import PropTypes from 'prop-types';
 import Card from '../common/Card';
 import StatusBadge from '../common/StatusBadge';
 
@@ -73,18 +72,5 @@ const styles = StyleSheet.create({
     color: '#007AFF',
   },
 });
-
-IssueCard.propTypes = {
-  issue: PropTypes.shape({
-    id: PropTypes.string.isRequired,
-    title: PropTypes.string.isRequired,
-    description: PropTypes.string.isRequired,
-    status: PropTypes.string.isRequired,
-    category: PropTypes.string.isRequired,
-    createdAt: PropTypes.string.isRequired,
-    assignedTo: PropTypes.string,
-  }).isRequired,
-  onPress: PropTypes.func,
-};
 
 export default IssueCard;

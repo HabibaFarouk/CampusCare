@@ -1,6 +1,5 @@
 import React from 'react';
 import { View, Text, StyleSheet, FlatList } from 'react-native';
-import PropTypes from 'prop-types';
 
 const CommentList = ({ comments = [] }) => {
   const renderComment = ({ item }) => (
@@ -73,16 +72,5 @@ const styles = StyleSheet.create({
     fontStyle: 'italic',
   },
 });
-
-CommentList.propTypes = {
-  comments: PropTypes.arrayOf(
-    PropTypes.shape({
-      id: PropTypes.string.isRequired,
-      author: PropTypes.string.isRequired,
-      text: PropTypes.string.isRequired,
-      createdAt: PropTypes.string.isRequired,
-    })
-  ),
-};
 
 export default CommentList;

@@ -4,9 +4,7 @@ import {
   Text,
   StyleSheet,
   ActivityIndicator,
-  ViewPropTypes,
 } from 'react-native';
-import PropTypes from 'prop-types';
 
 const Button = ({
   title,
@@ -98,16 +96,5 @@ const styles = StyleSheet.create({
     color: '#fff',
   },
 });
-
-Button.propTypes = {
-  title: PropTypes.string.isRequired,
-  onPress: PropTypes.func.isRequired,
-  loading: PropTypes.bool,
-  disabled: PropTypes.bool,
-  variant: PropTypes.oneOf(['primary', 'secondary', 'danger', 'success']),
-  size: PropTypes.oneOf(['sm', 'md', 'lg']),
-  style: ViewPropTypes.style,
-  textStyle: Text.propTypes.style,
-};
 
 export default Button;

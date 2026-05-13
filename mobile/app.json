@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "MemoryJournal",
-    "slug": "memory-journal",
+    "name": "CampusCare",
+    "slug": "campus-care",
     "version": "1.0.0",
     "orientation": "portrait",
     "userInterfaceStyle": "light",
@@ -9,8 +9,8 @@
     "ios": {
       "supportsTablet": true,
       "infoPlist": {
-        "NSCameraUsageDescription": "MemoryJournal uses the camera so you can capture moments for your journal.",
-        "NSPhotoLibraryUsageDescription": "MemoryJournal uses your photo library so you can add existing photos to a memory."
+        "NSCameraUsageDescription": "CampusCare uses the camera so you can capture moments for your journal.",
+        "NSPhotoLibraryUsageDescription": "CampusCare uses your photo library so you can add existing photos to a memory."
       }
     },
     "android": {
@@ -23,8 +23,8 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "Allow MemoryJournal to access your photos so you can add them to a memory.",
-          "cameraPermission": "Allow MemoryJournal to use the camera so you can capture memories."
+          "photosPermission": "Allow CampusCare to access your photos so you can add them to a memory.",
+          "cameraPermission": "Allow CampusCare to use the camera so you can capture memories."
         }
       ],
       "expo-asset",

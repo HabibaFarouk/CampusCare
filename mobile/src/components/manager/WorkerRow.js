@@ -1,6 +1,5 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import PropTypes from 'prop-types';
 import Card from '../common/Card';
 
 const WorkerRow = ({ worker, onPress, onStatusChange }) => {
@@ -131,19 +130,5 @@ const styles = StyleSheet.create({
     color: '#007AFF',
   },
 });
-
-WorkerRow.propTypes = {
-  worker: PropTypes.shape({
-    id: PropTypes.string.isRequired,
-    name: PropTypes.string.isRequired,
-    email: PropTypes.string.isRequired,
-    status: PropTypes.string.isRequired,
-    tasksAssigned: PropTypes.number,
-    tasksCompleted: PropTypes.number,
-    tasksPending: PropTypes.number,
-  }).isRequired,
-  onPress: PropTypes.func,
-  onStatusChange: PropTypes.func,
-};
 
 export default WorkerRow;

@@ -7,7 +7,8 @@ const issueApi = {
   },
 
   getMyIssues: async (filters = {}) => {
-    const response = await client.get('/issues/my-issues', { params: filters });
+    // 🔴 FIXED: Changed from '/issues/my-issues' to '/issues/my' to match your backend
+    const response = await client.get('/issues/my', { params: filters });
     return response.data;
   },
 

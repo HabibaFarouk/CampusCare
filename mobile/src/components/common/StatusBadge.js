@@ -1,6 +1,5 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import PropTypes from 'prop-types';
 import { STATUS_COLORS, VALID_STATUSES } from '../../utils/constants';
 
 const StatusBadge = ({ status, size = 'md' }) => {
@@ -50,10 +49,5 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
 });
-
-StatusBadge.propTypes = {
-  status: PropTypes.oneOf(Object.values(VALID_STATUSES)).isRequired,
-  size: PropTypes.oneOf(['sm', 'md', 'lg']),
-};
 
 export default StatusBadge;

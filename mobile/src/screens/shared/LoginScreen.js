@@ -10,7 +10,8 @@ import {
 } from 'react-native';
 import Input from '../../components/common/Input';
 import Button from '../../components/common/Button';
-import authApi from '../../api/authApi';
+// 1. Import the useAuth hook from your context!
+import { useAuth } from '../../auth/AuthContext'; 
 
 const LoginScreen = ({ navigation }) => {
   const [email, setEmail] = useState('');
@@ -18,25 +19,29 @@ const LoginScreen = ({ navigation }) => {
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
 
+  // 2. Extract the login function from the context
+  const { login } = useAuth(); 
+
   const handleLogin = async () => {
+    // 3. Use the correct state variables (email and password, not formData)
+    if (!email.trim() || !password.trim()) {
+      Alert.alert('Missing Fields', 'Please enter both email and password.');
+      return;
+    }
+
     try {
       setLoading(true);
-      setErrors({});
-
-      if (!email.trim()) {
-        setErrors((prev) => ({ ...prev, email: 'Email is required' }));
-        return;
+      
+      // 4. Pass the correct variables to the context login function
+      const result = await login(email, password);
+      
+      // 5. Show the error if it fails
+      if (!result.success) {
+        Alert.alert('Login Failed', result.error || 'Invalid email or password');
       }
-      if (!password.trim()) {
-        setErrors((prev) => ({ ...prev, password: 'Password is required' }));
-        return;
-      }
-
-      const response = await authApi.login(email, password);
-      // TODO: Save token and user data to context
-      // navigation.reset({ index: 0, routes: [{ name: 'Home' }] });
+      
     } catch (error) {
-      Alert.alert('Login Failed', error.response?.data?.message || error.message);
+      Alert.alert('Error', 'Something went wrong connecting to the server.');
     } finally {
       setLoading(false);
     }

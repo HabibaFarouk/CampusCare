@@ -1,6 +1,5 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import PropTypes from 'prop-types';
 import Card from '../common/Card';
 
 const KPIWidget = ({ label, value, unit = '', trend, icon }) => {
@@ -69,13 +68,5 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
 });
-
-KPIWidget.propTypes = {
-  label: PropTypes.string.isRequired,
-  value: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
-  unit: PropTypes.string,
-  trend: PropTypes.number,
-  icon: PropTypes.string,
-};
 
 export default KPIWidget;

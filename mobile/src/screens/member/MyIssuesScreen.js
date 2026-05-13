@@ -26,9 +26,19 @@ const MyIssuesScreen = ({ navigation }) => {
       const data = await issueApi.getMyIssues({
         status: filter === 'ALL' ? undefined : filter,
       });
-      setIssues(data);
+      
+      // Axios sometimes wraps responses. This ensures we safely grab the array.
+      const issuesList = Array.isArray(data) ? data : (data?.data || []);
+      setIssues(issuesList);
+      
     } catch (error) {
-      Alert.alert('Error', 'Failed to load issues');
+      // 1. Force the terminal to log the EXACT backend error
+      console.log("MY ISSUES FETCH ERROR:", error.response?.status, error.response?.data || error.message);
+      
+      // 2. Show the real error on the phone screen instead of a generic message
+      const errorMessage = error.response?.data?.error || error.message || 'Failed to load issues';
+      Alert.alert('Fetch Error', errorMessage);
+      
     } finally {
       setLoading(false);
     }
@@ -70,7 +80,8 @@ const MyIssuesScreen = ({ navigation }) => {
         <FlatList
           data={issues}
           renderItem={renderIssue}
-          keyExtractor={(item) => item.id}
+          // 3. Convert the Prisma Integer ID to a String to prevent FlatList crashes
+          keyExtractor={(item) => item.id.toString()}
           contentContainerStyle={styles.list}
         />
       ) : (

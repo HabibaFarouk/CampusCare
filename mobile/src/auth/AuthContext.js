@@ -4,7 +4,7 @@ import * as SecureStore from 'expo-secure-store';
 // 🚨 IMPORTANT FOR EXPO GO: 
 // You cannot use 'localhost' on a physical phone or Android emulator!
 // Replace this with your computer's actual local IPv4 address (e.g., '192.168.1.15')
-const API_URL = 'http://192.168.60.86:3000'; 
+const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://192.168.1.9:3001';
 
 const AuthContext = createContext({});
 

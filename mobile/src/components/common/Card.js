@@ -3,9 +3,7 @@ import {
   View,
   StyleSheet,
   TouchableOpacity,
-  ViewPropTypes,
 } from 'react-native';
-import PropTypes from 'prop-types';
 
 const Card = ({
   children,
@@ -62,13 +60,5 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
 });
-
-Card.propTypes = {
-  children: PropTypes.node.isRequired,
-  onPress: PropTypes.func,
-  style: ViewPropTypes.style,
-  elevated: PropTypes.bool,
-  variant: PropTypes.oneOf(['default', 'highlighted']),
-};
 
 export default Card;

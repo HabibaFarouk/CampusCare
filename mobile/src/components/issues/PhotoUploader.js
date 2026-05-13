@@ -8,7 +8,6 @@ import {
   FlatList,
   ActivityIndicator,
 } from 'react-native';
-import PropTypes from 'prop-types';
 import * as ImagePicker from 'expo-image-picker';
 
 const PhotoUploader = ({ photos = [], onUpload, loading = false }) => {
@@ -174,11 +173,5 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
 });
-
-PhotoUploader.propTypes = {
-  photos: PropTypes.arrayOf(PropTypes.string),
-  onUpload: PropTypes.func,
-  loading: PropTypes.bool,
-};
 
 export default PhotoUploader;
