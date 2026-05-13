@@ -1,0 +1,139 @@
+import React, { useState, useEffect } from 'react';
+import {
+  View,
+  FlatList,
+  StyleSheet,
+  ActivityIndicator,
+  Alert,
+  Text,
+} from 'react-native';
+import WorkerRow from '../../components/manager/WorkerRow';
+import Button from '../../components/common/Button';
+import managerApi from '../../api/managerApi';
+
+const WorkerMgmtScreen = ({ navigation }) => {
+  const [workers, setWorkers] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    loadWorkers();
+  }, []);
+
+  const loadWorkers = async () => {
+    try {
+      setLoading(true);
+      const data = await managerApi.getWorkers();
+      setWorkers(data);
+    } catch (error) {
+      Alert.alert('Error', 'Failed to load workers');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleStatusChange = async (workerId, newStatus) => {
+    try {
+      await managerApi.updateWorkerStatus(workerId, newStatus);
+      loadWorkers();
+      Alert.alert('Success', `Worker status updated to ${newStatus}`);
+    } catch (error) {
+      Alert.alert('Error', 'Failed to update worker status');
+    }
+  };
+
+  const renderWorker = ({ item }) => (
+    <WorkerRow
+      worker={item}
+      onPress={() =>
+        navigation.navigate('WorkerDetail', { workerId: item.id })
+      }
+      onStatusChange={handleStatusChange}
+    />
+  );
+
+  if (loading) {
+    return (
+      <View style={styles.centerContainer}>
+        <ActivityIndicator size="large" color="#007AFF" />
+      </View>
+    );
+  }
+
+  return (
+    <View style={styles.container}>
+      <View style={styles.header}>
+        <Text style={styles.title}>Worker Management</Text>
+        <Text style={styles.subtitle}>{workers.length} workers</Text>
+      </View>
+
+      {workers.length > 0 ? (
+        <FlatList
+          data={workers}
+          renderItem={renderWorker}
+          keyExtractor={(item) => item.id}
+          contentContainerStyle={styles.list}
+        />
+      ) : (
+        <View style={styles.emptyContainer}>
+          <Text style={styles.emptyText}>No workers found</Text>
+        </View>
+      )}
+
+      <View style={styles.fab}>
+        <Button
+          title="Add Worker"
+          onPress={() => navigation.navigate('AddWorker')}
+          size="lg"
+        />
+      </View>
+    </View>
+  );
+};
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#f5f5f5',
+  },
+  centerContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  header: {
+    backgroundColor: '#fff',
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E8E8E8',
+  },
+  title: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#000',
+  },
+  subtitle: {
+    fontSize: 14,
+    color: '#666',
+    marginTop: 4,
+  },
+  list: {
+    padding: 12,
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  emptyText: {
+    fontSize: 16,
+    color: '#666',
+  },
+  fab: {
+    padding: 16,
+    backgroundColor: '#fff',
+    borderTopWidth: 1,
+    borderTopColor: '#E8E8E8',
+  },
+});
+
+export default WorkerMgmtScreen;
