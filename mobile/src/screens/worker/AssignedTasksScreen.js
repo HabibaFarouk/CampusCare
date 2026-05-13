@@ -23,10 +23,10 @@ const AssignedTasksScreen = ({ navigation }) => {
   const loadTasks = async () => {
     try {
       setLoading(true);
-      const data = await issueApi.getMyIssues({
-        status: filter === 'ALL' ? undefined : filter,
-        assignedToMe: true,
-      });
+      const allTasks = await issueApi.getAssignedIssues();
+      const data = filter === 'ALL'
+        ? allTasks
+        : allTasks.filter((t) => t.status === filter);
       setTasks(data);
     } catch (error) {
       Alert.alert('Error', 'Failed to load assigned tasks');

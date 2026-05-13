@@ -1,7 +1,7 @@
 import axios from 'axios';
 import * as SecureStore from 'expo-secure-store';
 
-const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://192.168.1.9:3001';
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://192.168.1.10:3001';
 
 const client = axios.create({
   baseURL: API_BASE_URL,
@@ -10,6 +10,13 @@ const client = axios.create({
     'Content-Type': 'application/json',
   },
 });
+
+// Module-level callback set by AuthContext to handle session expiry
+let onUnauthorized = null;
+
+export const setUnauthorizedHandler = (handler) => {
+  onUnauthorized = handler;
+};
 
 // Request interceptor to add JWT token
 client.interceptors.request.use(
@@ -20,26 +27,16 @@ client.interceptors.request.use(
     }
     return config;
   },
-  (error) => {
-    return Promise.reject(error);
-  }
+  (error) => Promise.reject(error)
 );
 
 // Response interceptor to handle token expiration
 client.interceptors.response.use(
   (response) => response,
   async (error) => {
-    const originalRequest = error.config;
-
-    if (error.response?.status === 401 && !originalRequest._retry) {
-      originalRequest._retry = true;
-      // TODO: Implement token refresh logic
-      // const newToken = await refreshToken();
-      // await SecureStore.setItemAsync('accessToken', newToken);
-      // originalRequest.headers.Authorization = `Bearer ${newToken}`;
-      // return client(originalRequest);
+    if (error.response?.status === 401 && onUnauthorized) {
+      onUnauthorized();
     }
-
     return Promise.reject(error);
   }
 );

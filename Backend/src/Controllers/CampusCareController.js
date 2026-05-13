@@ -58,7 +58,7 @@ exports.registerUser = async (req, res) => {
   try {
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    await prisma.user.create({
+    const newUser = await prisma.user.create({
       data: {
         name,
         email,
@@ -67,7 +67,18 @@ exports.registerUser = async (req, res) => {
       },
     });
 
-    return res.status(201).json({ message: 'Registration successful' });
+    const { accessToken } = generateTokens(newUser);
+
+    return res.status(201).json({
+      message: 'Registration successful',
+      accessToken,
+      user: {
+        id: newUser.id,
+        name: newUser.name,
+        email: newUser.email,
+        role: newUser.role,
+      },
+    });
   } catch (err) {
     if (err.code === 'P2002') {
       return res.status(400).json({ error: 'Email already registered' });
