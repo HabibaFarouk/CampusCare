@@ -7,10 +7,12 @@ import {
   KeyboardAvoidingView,
   Platform,
   Text,
+  TouchableOpacity,
+  StatusBar,
 } from 'react-native';
 import Input from '../../components/common/Input';
 import Button from '../../components/common/Button';
-import authApi from '../../api/authApi';
+import { useAuth } from '../../auth/AuthContext';
 
 const RegisterScreen = ({ navigation }) => {
   const [formData, setFormData] = useState({
@@ -18,44 +20,47 @@ const RegisterScreen = ({ navigation }) => {
     email: '',
     password: '',
     confirmPassword: '',
-    phone: '',
   });
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
 
+  const { register } = useAuth();
+
+  const set = (field) => (value) => setFormData((prev) => ({ ...prev, [field]: value }));
+
+  const validate = () => {
+    const newErrors = {};
+    if (!formData.name.trim()) newErrors.name = 'Full name is required';
+    if (!formData.email.trim()) newErrors.email = 'Email is required';
+    else if (!/\S+@\S+\.\S+/.test(formData.email)) newErrors.email = 'Enter a valid email';
+    if (!formData.password) newErrors.password = 'Password is required';
+    else if (formData.password.length < 6) newErrors.password = 'Password must be at least 6 characters';
+    if (formData.password !== formData.confirmPassword)
+      newErrors.confirmPassword = 'Passwords do not match';
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
   const handleRegister = async () => {
+    if (!validate()) return;
+
     try {
       setLoading(true);
-      setErrors({});
+      const result = await register(
+        formData.name.trim(),
+        formData.email.trim(),
+        formData.password,
+        'MEMBER'
+      );
 
-      // Validation
-      if (!formData.name.trim()) {
-        setErrors((prev) => ({ ...prev, name: 'Name is required' }));
+      if (!result.success) {
+        Alert.alert('Registration Failed', result.error || 'Could not create account.');
         return;
       }
-      if (!formData.email.trim()) {
-        setErrors((prev) => ({ ...prev, email: 'Email is required' }));
-        return;
-      }
-      if (formData.password !== formData.confirmPassword) {
-        setErrors((prev) => ({
-          ...prev,
-          confirmPassword: 'Passwords do not match',
-        }));
-        return;
-      }
-
-      const response = await authApi.register({
-        name: formData.name,
-        email: formData.email,
-        password: formData.password,
-        phone: formData.phone,
-      });
-
-      Alert.alert('Success', 'Account created. Please log in.');
-      navigation.navigate('Login');
-    } catch (error) {
-      Alert.alert('Registration Failed', error.response?.data?.message || error.message);
+      // If backend returns token, AuthContext auto-logs in and navigation updates automatically.
+      // If not, navigate to Login manually.
+    } catch {
+      Alert.alert('Error', 'Something went wrong. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -66,82 +71,76 @@ const RegisterScreen = ({ navigation }) => {
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       style={styles.container}
     >
-      <ScrollView contentContainerStyle={styles.scrollView}>
-        <View style={styles.content}>
-          <View style={styles.header}>
-            <Text style={styles.title}>Create Account</Text>
-            <Text style={styles.subtitle}>Join CampusCare</Text>
+      <StatusBar barStyle="light-content" backgroundColor="#1565C0" />
+      <ScrollView contentContainerStyle={styles.scrollView} keyboardShouldPersistTaps="handled">
+        {/* Hero header */}
+        <View style={styles.hero}>
+          <View style={styles.logoCircle}>
+            <Text style={styles.logoIcon}>🏫</Text>
           </View>
+          <Text style={styles.appName}>CampusCare</Text>
+          <Text style={styles.tagline}>Join your campus community</Text>
+        </View>
 
-          <View style={styles.form}>
-            <Input
-              label="Full Name"
-              placeholder="Enter your name"
-              value={formData.name}
-              onChangeText={(value) =>
-                setFormData({ ...formData, name: value })
-              }
-              error={errors.name}
-            />
+        {/* Form card */}
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>Create account</Text>
+          <Text style={styles.cardSubtitle}>Fill in your details to get started</Text>
 
-            <Input
-              label="Email"
-              placeholder="Enter your email"
-              value={formData.email}
-              onChangeText={(value) =>
-                setFormData({ ...formData, email: value })
-              }
-              error={errors.email}
-              keyboardType="email-address"
-              autoCapitalize="none"
-            />
+          <Input
+            label="Full Name"
+            placeholder="Your full name"
+            value={formData.name}
+            onChangeText={set('name')}
+            error={errors.name}
+            autoCapitalize="words"
+          />
 
-            <Input
-              label="Phone (Optional)"
-              placeholder="Enter your phone"
-              value={formData.phone}
-              onChangeText={(value) =>
-                setFormData({ ...formData, phone: value })
-              }
-              keyboardType="phone-pad"
-            />
+          <Input
+            label="Email"
+            placeholder="you@university.edu"
+            value={formData.email}
+            onChangeText={set('email')}
+            error={errors.email}
+            keyboardType="email-address"
+            autoCapitalize="none"
+            autoCorrect={false}
+          />
 
-            <Input
-              label="Password"
-              placeholder="Enter password"
-              value={formData.password}
-              onChangeText={(value) =>
-                setFormData({ ...formData, password: value })
-              }
-              secureTextEntry
-            />
+          <Input
+            label="Password"
+            placeholder="At least 6 characters"
+            value={formData.password}
+            onChangeText={set('password')}
+            error={errors.password}
+            secureTextEntry
+          />
 
-            <Input
-              label="Confirm Password"
-              placeholder="Re-enter password"
-              value={formData.confirmPassword}
-              onChangeText={(value) =>
-                setFormData({ ...formData, confirmPassword: value })
-              }
-              error={errors.confirmPassword}
-              secureTextEntry
-            />
+          <Input
+            label="Confirm Password"
+            placeholder="Re-enter your password"
+            value={formData.confirmPassword}
+            onChangeText={set('confirmPassword')}
+            error={errors.confirmPassword}
+            secureTextEntry
+          />
 
-            <Button
-              title="Sign Up"
-              onPress={handleRegister}
-              loading={loading}
-              style={styles.registerButton}
-            />
+          <Button
+            title="Create Account"
+            onPress={handleRegister}
+            loading={loading}
+            style={styles.createButton}
+          />
 
-            <View style={styles.footerLinks}>
-              <Button
-                title="Already have an account? Login"
-                onPress={() => navigation.navigate('Login')}
-                variant="secondary"
-              />
-            </View>
-          </View>
+          <TouchableOpacity
+            style={styles.loginRow}
+            onPress={() => navigation.navigate('Login')}
+          >
+            <Text style={styles.loginText}>
+              Already have an account?{'  '}
+              <Text style={styles.loginLink}>Sign in</Text>
+            </Text>
+          </TouchableOpacity>
         </View>
       </ScrollView>
     </KeyboardAvoidingView>
@@ -151,39 +150,75 @@ const RegisterScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#1565C0',
   },
   scrollView: {
     flexGrow: 1,
-    justifyContent: 'center',
   },
-  content: {
-    padding: 20,
-  },
-  header: {
+  hero: {
     alignItems: 'center',
-    marginBottom: 40,
+    paddingTop: 48,
+    paddingBottom: 32,
+    paddingHorizontal: 20,
   },
-  title: {
-    fontSize: 28,
+  logoCircle: {
+    width: 70,
+    height: 70,
+    borderRadius: 35,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 14,
+  },
+  logoIcon: {
+    fontSize: 34,
+  },
+  appName: {
+    fontSize: 30,
+    fontWeight: '800',
+    color: '#ffffff',
+    letterSpacing: 0.5,
+  },
+  tagline: {
+    fontSize: 13,
+    color: 'rgba(255,255,255,0.75)',
+    marginTop: 6,
+  },
+  card: {
+    flex: 1,
+    backgroundColor: '#ffffff',
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    paddingHorizontal: 24,
+    paddingTop: 32,
+    paddingBottom: 40,
+  },
+  cardTitle: {
+    fontSize: 24,
     fontWeight: '700',
-    color: '#007AFF',
+    color: '#1a1a2e',
+    marginBottom: 4,
   },
-  subtitle: {
+  cardSubtitle: {
     fontSize: 14,
-    color: '#666',
-    marginTop: 8,
+    color: '#8a8a9a',
+    marginBottom: 24,
   },
-  form: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 20,
-  },
-  registerButton: {
-    marginTop: 20,
-  },
-  footerLinks: {
+  createButton: {
     marginTop: 16,
+  },
+  loginRow: {
+    alignItems: 'center',
+    marginTop: 20,
+    paddingVertical: 4,
+  },
+  loginText: {
+    fontSize: 14,
+    color: '#6b6b80',
+  },
+  loginLink: {
+    color: '#1565C0',
+    fontWeight: '700',
   },
 });
 

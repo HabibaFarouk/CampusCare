@@ -5,7 +5,9 @@ const CommentList = ({ comments = [] }) => {
   const renderComment = ({ item }) => (
     <View style={styles.commentItem}>
       <View style={styles.commentHeader}>
-        <Text style={styles.author}>{item.author}</Text>
+        <Text style={styles.author}>
+          {item.worker?.name || item.worker?.email || 'Unknown'}
+        </Text>
         <Text style={styles.timestamp}>
           {new Date(item.createdAt).toLocaleDateString()}
         </Text>
@@ -21,7 +23,7 @@ const CommentList = ({ comments = [] }) => {
         <FlatList
           data={comments}
           renderItem={renderComment}
-          keyExtractor={(item) => item.id}
+          keyExtractor={(item) => item.id.toString()}
           scrollEnabled={false}
         />
       ) : (

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -7,23 +7,34 @@ import {
   Image,
   FlatList,
   ActivityIndicator,
+  Alert,
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
+import { uploadImageToSupabase } from '../../services/supabaseStorage';
 
-const PhotoUploader = ({ photos = [], onUpload, loading = false }) => {
+const PhotoUploader = ({ photos = [], onUpload, loading = false, userId }) => {
   const [selectedPhotos, setSelectedPhotos] = useState([]);
+  const [uploading, setUploading] = useState(false);
+
+  useEffect(() => {
+    const requestPermissions = async () => {
+      await ImagePicker.requestCameraPermissionsAsync();
+      await ImagePicker.requestMediaLibraryPermissionsAsync();
+    };
+    requestPermissions();
+  }, []);
 
   const pickImage = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      mediaTypes: [ImagePicker.MediaType.Images],
       allowsEditing: true,
       aspect: [4, 3],
       quality: 1,
     });
 
     if (!result.canceled) {
-      const newPhotos = [...selectedPhotos, result.assets[0].uri];
-      setSelectedPhotos(newPhotos);
+      const asset = result.assets[0];
+      await uploadSelectedAsset(asset);
     }
   };
 
@@ -35,8 +46,28 @@ const PhotoUploader = ({ photos = [], onUpload, loading = false }) => {
     });
 
     if (!result.canceled) {
-      const newPhotos = [...selectedPhotos, result.assets[0].uri];
-      setSelectedPhotos(newPhotos);
+      const asset = result.assets[0];
+      await uploadSelectedAsset(asset);
+    }
+  };
+
+  const uploadSelectedAsset = async (asset) => {
+    try {
+      setUploading(true);
+      const url = await uploadImageToSupabase({
+        uri: asset.uri,
+        userId,
+        mimeType: asset.mimeType,
+      });
+      const nextPhotos = [...selectedPhotos, url];
+      setSelectedPhotos(nextPhotos);
+      if (onUpload) {
+        onUpload(nextPhotos);
+      }
+    } catch (error) {
+      Alert.alert('Upload Error', error.message || 'Failed to upload image');
+    } finally {
+      setUploading(false);
     }
   };
 
@@ -101,11 +132,11 @@ const PhotoUploader = ({ photos = [], onUpload, loading = false }) => {
       {/* Upload button */}
       {selectedPhotos.length > 0 && (
         <TouchableOpacity
-          style={[styles.uploadButton, loading && styles.disabledButton]}
+          style={[styles.uploadButton, (loading || uploading) && styles.disabledButton]}
           onPress={handleUpload}
-          disabled={loading}
+          disabled={loading || uploading}
         >
-          {loading ? (
+          {loading || uploading ? (
             <ActivityIndicator color="#fff" />
           ) : (
             <Text style={styles.uploadButtonText}>

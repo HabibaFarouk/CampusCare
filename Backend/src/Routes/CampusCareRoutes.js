@@ -11,6 +11,7 @@ router.post('/auth/login', controller.loginUser);
 router.post('/auth/logout', authenticate, controller.logout);
 router.post('/auth/forgot-password', controller.forgotPassword);
 router.post('/auth/reset-password', controller.resetPassword);
+router.put('/users/me', authenticate, controller.updateMyProfile);
 
 // ==========================================
 // 2.1 Community Member Flows
@@ -18,6 +19,7 @@ router.post('/auth/reset-password', controller.resetPassword);
 // Members can create issues and view their own
 router.post('/issues', authenticate, authorize('MEMBER', 'ADMIN'), controller.createIssue);
 router.get('/issues/my', authenticate, authorize('MEMBER', 'ADMIN'), controller.getMyIssues);
+router.delete('/issues/:id/member', authenticate, authorize('MEMBER', 'ADMIN'), controller.deleteMyIssue);
 // Any authenticated user can check a ticket's status (controller handles specific permission checks)
 router.get('/issues/:id/status', authenticate, controller.getIssueStatus);
 
@@ -37,13 +39,15 @@ router.delete('/issues/:id', authenticate, authorize('FACILITY_MANAGER', 'ADMIN'
 router.get('/issues/assigned', authenticate, authorize('WORKER', 'ADMIN'), controller.getAssignedIssues);
 router.put('/issues/:id/start', authenticate, authorize('WORKER', 'ADMIN'), controller.startIssue);
 router.put('/issues/:id/finish', authenticate, authorize('WORKER', 'ADMIN'), controller.finishIssue);
-router.post('/issues/:id/comments', authenticate, authorize('WORKER', 'ADMIN'), controller.addComment);
+router.get('/issues/:id/comments', authenticate, controller.getIssueComments);
+router.post('/issues/:id/comments', authenticate, authorize('WORKER', 'FACILITY_MANAGER', 'ADMIN'), controller.addComment);
 router.post('/issues/:id/photo', authenticate, authorize('WORKER', 'ADMIN'), controller.uploadCompletionPhoto);
 
 // ==========================================
 // 3.1 Facility Manager (Worker & Dashboard)
 // ==========================================
 router.get('/manager/workers', authenticate, authorize('FACILITY_MANAGER', 'ADMIN'), controller.getWorkers);
+router.get('/manager/workers/:id', authenticate, authorize('FACILITY_MANAGER', 'ADMIN'), controller.getWorkerDetails);
 router.put('/manager/workers/:id/status', authenticate, authorize('FACILITY_MANAGER', 'ADMIN'), controller.updateWorkerStatus);
 // NEW: KPI Dashboard & Workload endpoints
 router.get('/manager/dashboard', authenticate, authorize('FACILITY_MANAGER', 'ADMIN'), controller.getDashboardKPIs);

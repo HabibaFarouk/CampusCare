@@ -3,7 +3,7 @@ import client from './client';
 const managerApi = {
   getWorkers: async (filters = {}) => {
     const response = await client.get('/manager/workers', { params: filters });
-    return response.data;
+    return response.data?.data || [];
   },
 
   getWorker: async (workerId) => {
@@ -11,8 +11,9 @@ const managerApi = {
     return response.data;
   },
 
+  // Backend route: GET /manager/dashboard
   getDashboardKPIs: async () => {
-    const response = await client.get('/manager/dashboard/kpis');
+    const response = await client.get('/manager/dashboard');
     return response.data;
   },
 
@@ -21,22 +22,36 @@ const managerApi = {
     return response.data;
   },
 
+  // Backend route: PUT /issues/:id/assign
   assignIssueToWorker: async (issueId, workerId) => {
-    const response = await client.post(`/manager/issues/${issueId}/assign`, {
-      workerId,
-    });
+    const response = await client.put(`/issues/${issueId}/assign`, { workerId });
     return response.data;
   },
 
-  updateWorkerStatus: async (workerId, status) => {
-    const response = await client.patch(`/manager/workers/${workerId}/status`, {
-      status,
-    });
+  // Backend route: PUT /manager/workers/:id/status
+  updateWorkerStatus: async (workerId, isActive) => {
+    const status = isActive ? 'active' : 'inactive';
+    const response = await client.put(`/manager/workers/${workerId}/status`, { status });
+    return response.data?.data || response.data;
+  },
+
+  getAllIssues: async (filters = {}) => {
+    const response = await client.get('/issues', { params: filters });
     return response.data;
   },
 
-  getReports: async (filters = {}) => {
-    const response = await client.get('/manager/reports', { params: filters });
+  getPrioritizedIssues: async () => {
+    const response = await client.get('/issues/prioritized');
+    return response.data;
+  },
+
+  closeIssue: async (issueId) => {
+    const response = await client.put(`/issues/${issueId}/close`);
+    return response.data;
+  },
+
+  deleteIssue: async (issueId) => {
+    const response = await client.delete(`/issues/${issueId}`);
     return response.data;
   },
 };

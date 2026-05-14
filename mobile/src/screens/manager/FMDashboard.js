@@ -23,7 +23,13 @@ const FMDashboard = ({ navigation }) => {
     try {
       setLoading(true);
       const data = await managerApi.getDashboardKPIs();
-      setKpis(data);
+      const mapped = {
+        totalIssues: data?.totalIssues || 0,
+        pendingIssues: (data?.submittedIssues || 0) + (data?.inProgressIssues || 0),
+        resolvedIssues: data?.resolvedIssues || 0,
+        totalWorkers: data?.activeWorkers || 0,
+      };
+      setKpis(mapped);
     } catch (error) {
       Alert.alert('Error', 'Failed to load dashboard');
     } finally {
@@ -76,7 +82,7 @@ const FMDashboard = ({ navigation }) => {
       <View style={styles.actionButtons}>
         <Button
           title="Manage Workers"
-          onPress={() => navigation.navigate('WorkerMgmt')}
+          onPress={() => navigation.navigate('WorkerMgmtTab')}
           style={styles.actionButton}
         />
         <Button

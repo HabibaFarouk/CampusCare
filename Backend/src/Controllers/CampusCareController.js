@@ -7,6 +7,33 @@ require('dotenv').config();
 const VALID_STATUSES = ['SUBMITTED', 'ASSIGNED', 'IN_PROGRESS', 'RESOLVED', 'CANCELLED'];
 const VALID_CATEGORIES = ['MAINTENANCE', 'CLEANLINESS', 'SUSTAINABILITY'];
 
+const createAuditLog = async ({ ticketId, changedById, action, oldValue, newValue }) => {
+  try {
+    await prisma.auditLog.create({
+      data: {
+        ticketId,
+        changedById,
+        action,
+        oldValue: oldValue || null,
+        newValue: newValue || null,
+      },
+    });
+  } catch (err) {
+    console.error('AuditLog error:', err.message);
+  }
+};
+
+const createNotification = async ({ userId, message }) => {
+  if (!userId || !message) return;
+  try {
+    await prisma.notification.create({
+      data: { userId, message },
+    });
+  } catch (err) {
+    console.error('Notification error:', err.message);
+  }
+};
+
 function parseRole(role) {
   if (role == null || role === '') return 'MEMBER';
   const r = String(role).trim().toUpperCase().replace(/[\s-]+/g, '_');
@@ -58,7 +85,7 @@ exports.registerUser = async (req, res) => {
   try {
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    await prisma.user.create({
+    const newUser = await prisma.user.create({
       data: {
         name,
         email,
@@ -67,7 +94,18 @@ exports.registerUser = async (req, res) => {
       },
     });
 
-    return res.status(201).json({ message: 'Registration successful' });
+    const { accessToken } = generateTokens(newUser);
+
+    return res.status(201).json({
+      message: 'Registration successful',
+      accessToken,
+      user: {
+        id: newUser.id,
+        name: newUser.name,
+        email: newUser.email,
+        role: newUser.role,
+      },
+    });
   } catch (err) {
     if (err.code === 'P2002') {
       return res.status(400).json({ error: 'Email already registered' });
@@ -112,6 +150,7 @@ exports.loginUser = async (req, res) => {
       accessToken,
       user: {
         id: user.id,
+        name: user.name,
         email: user.email,
         role: user.role,
       },
@@ -221,12 +260,33 @@ exports.createIssue = async (req, res) => {
         category: cat,
         location,
         imageUrl: imageUrl || null,
+        status: 'SUBMITTED',
         createdById: req.user.id,
       },
       include: {
         createdBy: { select: { id: true, name: true, email: true } },
       },
     });
+
+    await createAuditLog({
+      ticketId: ticket.id,
+      changedById: req.user.id,
+      action: 'ISSUE_CREATED',
+      newValue: `status:${ticket.status}`,
+    });
+
+    const managers = await prisma.user.findMany({
+      where: { role: 'FACILITY_MANAGER', isActive: true },
+      select: { id: true },
+    });
+    await Promise.all(
+      managers.map((m) =>
+        createNotification({
+          userId: m.id,
+          message: `New issue submitted: ${ticket.title}`,
+        })
+      )
+    );
 
     return res.status(201).json(ticket);
   } catch (err) {
@@ -239,8 +299,18 @@ exports.createIssue = async (req, res) => {
 
 exports.getMyIssues = async (req, res) => {
   try {
+    const { status } = req.query;
+    const filter = { createdById: req.user.id };
+    if (status) {
+      const s = String(status).toUpperCase();
+      if (!VALID_STATUSES.includes(s)) {
+        return res.status(400).json({ error: `Invalid status. Use one of: ${VALID_STATUSES.join(', ')}` });
+      }
+      filter.status = s;
+    }
+
     const data = await prisma.ticket.findMany({
-      where: { createdById: req.user.id },
+      where: filter,
       orderBy: { createdAt: 'desc' },
       include: {
         assignedTo: { select: { id: true, name: true, email: true } },
@@ -406,6 +476,14 @@ exports.assignIssueToWorker = async (req, res) => {
   }
 
   try {
+    const existing = await prisma.ticket.findUnique({
+      where: { id },
+      select: { id: true, title: true, assignedToId: true, status: true, createdById: true },
+    });
+    if (!existing) {
+      return res.status(404).json({ error: 'Ticket not found' });
+    }
+
     const worker = await prisma.user.findFirst({
       where: { id: wid, role: 'WORKER' },
     });
@@ -421,6 +499,25 @@ exports.assignIssueToWorker = async (req, res) => {
         assignedTo: { select: { name: true, email: true } },
       },
     });
+
+    await createAuditLog({
+      ticketId: id,
+      changedById: req.user.id,
+      action: 'ASSIGNED_WORKER',
+      oldValue: `assignedTo:${existing.assignedToId || 'none'}`,
+      newValue: `assignedTo:${wid}`,
+    });
+
+    await Promise.all([
+      createNotification({
+        userId: wid,
+        message: `You have been assigned issue #${id}`,
+      }),
+      createNotification({
+        userId: existing.createdById,
+        message: `Your issue #${id} was assigned to a worker.`,
+      }),
+    ]);
     return res.status(200).json(updatedTicket);
   } catch (err) {
     if (err.code === 'P2025') {
@@ -435,9 +532,28 @@ exports.closeIssue = async (req, res) => {
   if (!Number.isInteger(id) || id <= 0) return res.status(400).json({ error: 'Invalid ticket id' });
 
   try {
+    const existing = await prisma.ticket.findUnique({
+      where: { id },
+      select: { id: true, status: true, createdById: true },
+    });
+    if (!existing) return res.status(404).json({ error: 'Ticket not found' });
+
     const updatedTicket = await prisma.ticket.update({
       where: { id },
       data: { status: 'RESOLVED' },
+    });
+
+    await createAuditLog({
+      ticketId: id,
+      changedById: req.user.id,
+      action: 'STATUS_CHANGED',
+      oldValue: existing.status,
+      newValue: 'RESOLVED',
+    });
+
+    await createNotification({
+      userId: existing.createdById,
+      message: `Your issue #${id} was resolved.`,
     });
     return res.status(200).json(updatedTicket);
   } catch (err) {
@@ -465,6 +581,8 @@ exports.getAssignedIssues = async (req, res) => {
         title: true,
         description: true,
         category: true,
+        imageUrl: true,
+        completionPhotoUrl: true,
         status: true,
         createdAt: true,
         assignedTo: { select: { id: true, name: true, email: true } },
@@ -514,6 +632,19 @@ exports.startIssue = async (req, res) => {
       },
     });
 
+    await createAuditLog({
+      ticketId: id,
+      changedById: req.user.id,
+      action: 'STATUS_CHANGED',
+      oldValue: ticket.status,
+      newValue: 'IN_PROGRESS',
+    });
+
+    await createNotification({
+      userId: ticket.assignedToId,
+      message: `Issue #${id} started.`,
+    });
+
     return res.status(200).json(updatedTicket);
   } catch (err) {
     return res.status(500).json({ error: err.message });
@@ -555,6 +686,19 @@ exports.finishIssue = async (req, res) => {
       },
     });
 
+    await createAuditLog({
+      ticketId: id,
+      changedById: req.user.id,
+      action: 'STATUS_CHANGED',
+      oldValue: ticket.status,
+      newValue: 'RESOLVED',
+    });
+
+    await createNotification({
+      userId: ticket.assignedToId,
+      message: `Issue #${id} finished.`,
+    });
+
     return res.status(200).json(updatedTicket);
   } catch (err) {
     return res.status(500).json({ error: err.message });
@@ -570,8 +714,8 @@ exports.addComment = async (req, res) => {
 
   try {
     const role = String(req.user.role).toUpperCase();
-    if (role !== 'WORKER' && role !== 'ADMIN') {
-      return res.status(403).json({ error: 'Only workers or admins can perform this action' });
+    if (role !== 'WORKER' && role !== 'FACILITY_MANAGER' && role !== 'ADMIN') {
+      return res.status(403).json({ error: 'Only workers, facility managers, or admins can perform this action' });
     }
 
     const ticket = await prisma.ticket.findUnique({
@@ -596,6 +740,25 @@ exports.addComment = async (req, res) => {
         workerId: workerIdForComment,
       },
     });
+
+    await createAuditLog({
+      ticketId: id,
+      changedById: req.user.id,
+      action: 'COMMENT_ADDED',
+      newValue: text,
+    });
+
+    const notifyTargets = [ticket.createdById, ticket.assignedToId].filter(
+      (uid) => uid && uid !== req.user.id
+    );
+    await Promise.all(
+      notifyTargets.map((uid) =>
+        createNotification({
+          userId: uid,
+          message: `New comment on issue #${id}.`,
+        })
+      )
+    );
 
     return res.status(201).json(comment);
   } catch (err) {
@@ -641,6 +804,18 @@ exports.uploadCompletionPhoto = async (req, res) => {
       },
     });
 
+    await createAuditLog({
+      ticketId: id,
+      changedById: req.user.id,
+      action: 'PHOTO_UPLOADED',
+      newValue: photoUrl,
+    });
+
+    await createNotification({
+      userId: ticket.createdById,
+      message: `A completion photo was uploaded for issue #${id}.`,
+    });
+
     return res.status(200).json(updatedTicket);
   } catch (err) {
     return res.status(500).json({ error: err.message });
@@ -666,6 +841,54 @@ exports.getWorkers = async (req, res) => {
     return res.status(200).json({
       message: 'Workers fetched successfully',
       data: workers,
+    });
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
+};
+
+exports.getWorkerDetails = async (req, res) => {
+  const userId = Number(req.params.id);
+  if (!Number.isInteger(userId) || userId <= 0) {
+    return res.status(400).json({ message: 'Invalid worker id' });
+  }
+
+  try {
+    const worker = await prisma.user.findFirst({
+      where: { id: userId, role: 'WORKER' },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        isActive: true,
+        createdAt: true,
+      },
+    });
+
+    if (!worker) {
+      return res.status(404).json({ error: 'Worker not found' });
+    }
+
+    const [activeTasks, resolvedTasks] = await Promise.all([
+      prisma.ticket.count({
+        where: {
+          assignedToId: userId,
+          status: { in: ['ASSIGNED', 'IN_PROGRESS'] },
+        },
+      }),
+      prisma.ticket.count({
+        where: {
+          assignedToId: userId,
+          status: 'RESOLVED',
+        },
+      }),
+    ]);
+
+    return res.status(200).json({
+      ...worker,
+      activeTasks,
+      resolvedTasks,
     });
   } catch (err) {
     return res.status(500).json({ error: err.message });
@@ -856,5 +1079,99 @@ exports.updateUserRole = async (req, res) => {
   } catch (error) {
     if (error.code === 'P2025') return res.status(404).json({ error: 'User not found' });
     return res.status(500).json({ error: 'Failed to update user role' });
+  }
+};
+
+exports.getIssueComments = async (req, res) => {
+  const id = Number(req.params.id);
+  if (!Number.isInteger(id) || id <= 0) return res.status(400).json({ error: 'Invalid ticket id' });
+
+  try {
+    const ticket = await prisma.ticket.findUnique({
+      where: { id },
+      select: { id: true, createdById: true, assignedToId: true },
+    });
+
+    if (!ticket) return res.status(404).json({ error: 'Ticket not found' });
+
+    const role = String(req.user.role).toUpperCase();
+    const uid = req.user.id;
+    const canView =
+      role === 'ADMIN' ||
+      role === 'FACILITY_MANAGER' ||
+      ticket.createdById === uid ||
+      ticket.assignedToId === uid;
+
+    if (!canView) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+
+    const comments = await prisma.comment.findMany({
+      where: { ticketId: id },
+      include: {
+        worker: { select: { id: true, name: true, email: true } },
+      },
+      orderBy: { createdAt: 'asc' },
+    });
+
+    return res.status(200).json(comments);
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
+};
+
+exports.updateMyProfile = async (req, res) => {
+  const { name, email } = req.body;
+  if (!name && !email) {
+    return res.status(400).json({ error: 'Nothing to update' });
+  }
+
+  try {
+    const updatedUser = await prisma.user.update({
+      where: { id: req.user.id },
+      data: {
+        ...(name ? { name: String(name).trim() } : {}),
+        ...(email ? { email: String(email).trim().toLowerCase() } : {}),
+      },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        isActive: true,
+      },
+    });
+
+    return res.status(200).json({ user: updatedUser });
+  } catch (error) {
+    if (error.code === 'P2002') {
+      return res.status(409).json({ error: 'Email already in use' });
+    }
+    return res.status(500).json({ error: 'Failed to update profile' });
+  }
+};
+
+exports.deleteMyIssue = async (req, res) => {
+  const id = Number(req.params.id);
+  if (!Number.isInteger(id) || id <= 0) return res.status(400).json({ error: 'Invalid ticket id' });
+
+  try {
+    const ticket = await prisma.ticket.findUnique({
+      where: { id },
+      select: { id: true, status: true, createdById: true, assignedToId: true },
+    });
+
+    if (!ticket) return res.status(404).json({ error: 'Ticket not found' });
+    if (ticket.createdById !== req.user.id) {
+      return res.status(403).json({ error: 'Not authorized to delete this ticket' });
+    }
+    if (ticket.assignedToId || ticket.status !== 'SUBMITTED') {
+      return res.status(400).json({ error: 'Only unassigned submitted issues can be deleted' });
+    }
+
+    await prisma.ticket.delete({ where: { id } });
+    return res.status(200).json({ message: 'Issue deleted' });
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
   }
 };

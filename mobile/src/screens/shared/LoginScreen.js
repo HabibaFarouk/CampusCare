@@ -7,23 +7,21 @@ import {
   KeyboardAvoidingView,
   Platform,
   Text,
+  TouchableOpacity,
+  StatusBar,
 } from 'react-native';
 import Input from '../../components/common/Input';
 import Button from '../../components/common/Button';
-// 1. Import the useAuth hook from your context!
-import { useAuth } from '../../auth/AuthContext'; 
+import { useAuth } from '../../auth/AuthContext';
 
 const LoginScreen = ({ navigation }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  const [errors, setErrors] = useState({});
 
-  // 2. Extract the login function from the context
-  const { login } = useAuth(); 
+  const { login } = useAuth();
 
   const handleLogin = async () => {
-    // 3. Use the correct state variables (email and password, not formData)
     if (!email.trim() || !password.trim()) {
       Alert.alert('Missing Fields', 'Please enter both email and password.');
       return;
@@ -31,16 +29,11 @@ const LoginScreen = ({ navigation }) => {
 
     try {
       setLoading(true);
-      
-      // 4. Pass the correct variables to the context login function
-      const result = await login(email, password);
-      
-      // 5. Show the error if it fails
+      const result = await login(email.trim(), password);
       if (!result.success) {
-        Alert.alert('Login Failed', result.error || 'Invalid email or password');
+        Alert.alert('Login Failed', result.error || 'Invalid email or password.');
       }
-      
-    } catch (error) {
+    } catch {
       Alert.alert('Error', 'Something went wrong connecting to the server.');
     } finally {
       setLoading(false);
@@ -52,57 +45,69 @@ const LoginScreen = ({ navigation }) => {
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       style={styles.container}
     >
-      <ScrollView contentContainerStyle={styles.scrollView}>
-        <View style={styles.content}>
-          <View style={styles.header}>
-            <Text style={styles.title}>CampusCare</Text>
-            <Text style={styles.subtitle}>Issue Management System</Text>
+      <StatusBar barStyle="light-content" backgroundColor="#1565C0" />
+      <ScrollView contentContainerStyle={styles.scrollView} keyboardShouldPersistTaps="handled">
+        {/* Hero header */}
+        <View style={styles.hero}>
+          <View style={styles.logoCircle}>
+            <Text style={styles.logoIcon}>🏫</Text>
+          </View>
+          <Text style={styles.appName}>CampusCare</Text>
+          <Text style={styles.tagline}>Issue Management System</Text>
+        </View>
+
+        {/* Form card */}
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>Welcome back</Text>
+          <Text style={styles.cardSubtitle}>Sign in to your account</Text>
+
+          <Input
+            label="Email"
+            placeholder="you@university.edu"
+            value={email}
+            onChangeText={setEmail}
+            keyboardType="email-address"
+            autoCapitalize="none"
+            autoCorrect={false}
+          />
+
+          <Input
+            label="Password"
+            placeholder="Enter your password"
+            value={password}
+            onChangeText={setPassword}
+            secureTextEntry
+          />
+
+          <TouchableOpacity
+            style={styles.forgotRow}
+            onPress={() => navigation.navigate('ForgotPassword')}
+          >
+            <Text style={styles.forgotText}>Forgot password?</Text>
+          </TouchableOpacity>
+
+          <Button
+            title="Sign In"
+            onPress={handleLogin}
+            loading={loading}
+            style={styles.signInButton}
+          />
+
+          <View style={styles.divider}>
+            <View style={styles.dividerLine} />
+            <Text style={styles.dividerText}>OR</Text>
+            <View style={styles.dividerLine} />
           </View>
 
-          <View style={styles.form}>
-            <Input
-              label="Email"
-              placeholder="Enter your email"
-              value={email}
-              onChangeText={setEmail}
-              error={errors.email}
-              keyboardType="email-address"
-              autoCapitalize="none"
-            />
-
-            <Input
-              label="Password"
-              placeholder="Enter your password"
-              value={password}
-              onChangeText={setPassword}
-              error={errors.password}
-              secureTextEntry
-            />
-
-            <Button
-              title="Login"
-              onPress={handleLogin}
-              loading={loading}
-              style={styles.loginButton}
-            />
-
-            <View style={styles.forgotPasswordContainer}>
-              <Button
-                title="Forgot Password?"
-                onPress={() => navigation.navigate('ForgotPassword')}
-                variant="text"
-                size="sm"
-              />
-            </View>
-
-            <View style={styles.footerLinks}>
-              <Button
-                title="Don't have an account? Sign Up"
-                onPress={() => navigation.navigate('Register')}
-                variant="secondary"
-              />
-            </View>
-          </View>
+          <TouchableOpacity
+            style={styles.signUpRow}
+            onPress={() => navigation.navigate('Register')}
+          >
+            <Text style={styles.signUpText}>
+              Don't have an account?{'  '}
+              <Text style={styles.signUpLink}>Create one</Text>
+            </Text>
+          </TouchableOpacity>
         </View>
       </ScrollView>
     </KeyboardAvoidingView>
@@ -112,43 +117,103 @@ const LoginScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#1565C0',
   },
   scrollView: {
     flexGrow: 1,
+  },
+  hero: {
+    alignItems: 'center',
+    paddingTop: 60,
+    paddingBottom: 40,
+    paddingHorizontal: 20,
+  },
+  logoCircle: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: 'rgba(255,255,255,0.2)',
     justifyContent: 'center',
-  },
-  content: {
-    padding: 20,
-  },
-  header: {
     alignItems: 'center',
-    marginBottom: 40,
+    marginBottom: 16,
   },
-  title: {
-    fontSize: 32,
+  logoIcon: {
+    fontSize: 40,
+  },
+  appName: {
+    fontSize: 34,
+    fontWeight: '800',
+    color: '#ffffff',
+    letterSpacing: 0.5,
+  },
+  tagline: {
+    fontSize: 13,
+    color: 'rgba(255,255,255,0.75)',
+    marginTop: 6,
+    letterSpacing: 0.3,
+  },
+  card: {
+    flex: 1,
+    backgroundColor: '#ffffff',
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    paddingHorizontal: 24,
+    paddingTop: 32,
+    paddingBottom: 40,
+    minHeight: 460,
+  },
+  cardTitle: {
+    fontSize: 24,
     fontWeight: '700',
-    color: '#007AFF',
+    color: '#1a1a2e',
+    marginBottom: 4,
   },
-  subtitle: {
+  cardSubtitle: {
     fontSize: 14,
-    color: '#666',
-    marginTop: 8,
+    color: '#8a8a9a',
+    marginBottom: 28,
   },
-  form: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 20,
+  forgotRow: {
+    alignSelf: 'flex-end',
+    marginTop: 4,
+    marginBottom: 8,
+    paddingVertical: 4,
   },
-  loginButton: {
-    marginTop: 20,
+  forgotText: {
+    fontSize: 13,
+    color: '#1565C0',
+    fontWeight: '600',
   },
-  forgotPasswordContainer: {
+  signInButton: {
+    marginTop: 12,
+  },
+  divider: {
+    flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 8,
+    marginVertical: 24,
   },
-  footerLinks: {
-    marginTop: 16,
+  dividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: '#e8e8f0',
+  },
+  dividerText: {
+    fontSize: 12,
+    color: '#b0b0c0',
+    marginHorizontal: 12,
+    fontWeight: '600',
+  },
+  signUpRow: {
+    alignItems: 'center',
+    paddingVertical: 4,
+  },
+  signUpText: {
+    fontSize: 14,
+    color: '#6b6b80',
+  },
+  signUpLink: {
+    color: '#1565C0',
+    fontWeight: '700',
   },
 });
 

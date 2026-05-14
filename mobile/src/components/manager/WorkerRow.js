@@ -4,11 +4,13 @@ import Card from '../common/Card';
 
 const WorkerRow = ({ worker, onPress, onStatusChange }) => {
   const handleStatusToggle = () => {
-    const newStatus = worker.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE';
+    const nextActive = !worker.isActive;
     if (onStatusChange) {
-      onStatusChange(worker.id, newStatus);
+      onStatusChange(worker.id, nextActive);
     }
   };
+
+  const statusLabel = worker.isActive ? 'ACTIVE' : 'INACTIVE';
 
   return (
     <Card onPress={onPress} style={styles.card}>
@@ -23,11 +25,11 @@ const WorkerRow = ({ worker, onPress, onStatusChange }) => {
               styles.statusBadge,
               {
                 backgroundColor:
-                  worker.status === 'ACTIVE' ? '#34C759' : '#FF9500',
+                  worker.isActive ? '#34C759' : '#FF9500',
               },
             ]}
           >
-            {worker.status}
+            {statusLabel}
           </Text>
         </View>
       </View>
@@ -53,7 +55,7 @@ const WorkerRow = ({ worker, onPress, onStatusChange }) => {
           onPress={handleStatusToggle}
         >
           <Text style={styles.toggleText}>
-            {worker.status === 'ACTIVE' ? 'Deactivate' : 'Activate'}
+            {worker.isActive ? 'Deactivate' : 'Activate'}
           </Text>
         </TouchableOpacity>
       )}
