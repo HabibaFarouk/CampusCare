@@ -16,14 +16,21 @@ const WorkerMgmtScreen = ({ navigation }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    loadWorkers();
-  }, []);
+    const unsubscribe = navigation.addListener('focus', () => {
+      loadWorkers();
+    });
+    return unsubscribe;
+  }, [navigation]);
 
   const loadWorkers = async () => {
     try {
       setLoading(true);
       const data = await managerApi.getWorkers();
-      setWorkers(data);
+      const normalized = (Array.isArray(data) ? data : []).map((worker) => ({
+        ...worker,
+        isActive: Boolean(worker.isActive),
+      }));
+      setWorkers(normalized);
     } catch (error) {
       Alert.alert('Error', 'Failed to load workers');
     } finally {
@@ -35,7 +42,7 @@ const WorkerMgmtScreen = ({ navigation }) => {
     try {
       await managerApi.updateWorkerStatus(workerId, newStatus);
       loadWorkers();
-      Alert.alert('Success', `Worker status updated to ${newStatus}`);
+      Alert.alert('Success', `Worker status updated`);
     } catch (error) {
       Alert.alert('Error', 'Failed to update worker status');
     }
@@ -70,7 +77,7 @@ const WorkerMgmtScreen = ({ navigation }) => {
         <FlatList
           data={workers}
           renderItem={renderWorker}
-          keyExtractor={(item) => item.id}
+          keyExtractor={(item) => item.id.toString()}
           contentContainerStyle={styles.list}
         />
       ) : (

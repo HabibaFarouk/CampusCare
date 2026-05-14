@@ -1,23 +1,23 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
+  StyleSheet,
+  Text,
+  ActivityIndicator,
   FlatList,
   ScrollView,
-  StyleSheet,
-  ActivityIndicator,
   Alert,
-  Text,
 } from 'react-native';
 import IssueCard from '../../components/issues/IssueCard';
 import Button from '../../components/common/Button';
-import issueApi from '../../api/issueApi';
-import { useNotification } from '../../utils/NotificationContext';
+import managerApi from '../../api/managerApi';
 
-const MyIssuesScreen = ({ navigation }) => {
+const FILTERS = ['UNRESOLVED', 'SUBMITTED', 'ASSIGNED', 'IN_PROGRESS', 'RESOLVED', 'ALL'];
+
+const IssueListScreen = ({ navigation }) => {
   const [issues, setIssues] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState('ALL');
-  const { showError, showSuccess } = useNotification();
+  const [filter, setFilter] = useState('UNRESOLVED');
 
   useEffect(() => {
     const unsubscribe = navigation.addListener('focus', () => {
@@ -33,18 +33,21 @@ const MyIssuesScreen = ({ navigation }) => {
   const loadIssues = async () => {
     try {
       setLoading(true);
-      const data = await issueApi.getMyIssues({
-        status: filter === 'ALL' ? undefined : filter,
-      });
-      
-      // Axios sometimes wraps responses. This ensures we safely grab the array.
-      const issuesList = Array.isArray(data) ? data : (data?.data || []);
-      setIssues(issuesList);
-      
+      if (filter === 'ALL' || filter === 'UNRESOLVED') {
+        const data = await managerApi.getAllIssues();
+        const list = Array.isArray(data) ? data : [];
+        const filtered =
+          filter === 'UNRESOLVED'
+            ? list.filter((issue) => issue.status !== 'RESOLVED')
+            : list;
+        setIssues(filtered);
+        return;
+      }
+
+      const data = await managerApi.getAllIssues({ status: filter });
+      setIssues(Array.isArray(data) ? data : []);
     } catch (error) {
-      const errorMessage = error.response?.data?.error || error.message || 'Failed to load issues';
-      console.log("MY ISSUES FETCH ERROR:", error.response?.status, errorMessage);
-      showError(errorMessage);
+      Alert.alert('Error', 'Failed to load issues');
     } finally {
       setLoading(false);
     }
@@ -53,9 +56,7 @@ const MyIssuesScreen = ({ navigation }) => {
   const renderIssue = ({ item }) => (
     <IssueCard
       issue={item}
-      onPress={() =>
-        navigation.navigate('IssueDetail', { issueId: item.id })
-      }
+      onPress={() => navigation.navigate('IssueDetail', { issueId: item.id })}
     />
   );
 
@@ -75,7 +76,7 @@ const MyIssuesScreen = ({ navigation }) => {
         style={styles.filterContainer}
         contentContainerStyle={styles.filterContent}
       >
-        {['ALL', 'SUBMITTED', 'ASSIGNED', 'IN_PROGRESS', 'RESOLVED'].map((status) => (
+        {FILTERS.map((status) => (
           <Button
             key={status}
             title={status}
@@ -97,20 +98,8 @@ const MyIssuesScreen = ({ navigation }) => {
       ) : (
         <View style={styles.emptyContainer}>
           <Text style={styles.emptyText}>No issues found</Text>
-          <Button
-            title="Create New Issue"
-            onPress={() => navigation.navigate('ReportIssueTab')}
-          />
         </View>
       )}
-
-      <View style={styles.fab}>
-        <Button
-          title="+ Report Issue"
-          onPress={() => navigation.navigate('ReportIssueTab')}
-          size="lg"
-        />
-      </View>
     </View>
   );
 };
@@ -136,7 +125,7 @@ const styles = StyleSheet.create({
   },
   filterButton: {
     marginRight: 8,
-    minWidth: 110,
+    minWidth: 120,
   },
   list: {
     padding: 12,
@@ -150,14 +139,7 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: 16,
     color: '#666',
-    marginBottom: 20,
-  },
-  fab: {
-    padding: 16,
-    backgroundColor: '#fff',
-    borderTopWidth: 1,
-    borderTopColor: '#E8E8E8',
   },
 });
 
-export default MyIssuesScreen;
+export default IssueListScreen;

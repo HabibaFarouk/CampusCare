@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -8,6 +8,9 @@ import {
   ScrollView,
 } from 'react-native';
 import { useAuth } from '../../auth/AuthContext';
+import Input from '../../components/common/Input';
+import Button from '../../components/common/Button';
+import userApi from '../../api/userApi';
 
 const ROLE_LABELS = {
   MEMBER: 'Community Member',
@@ -24,7 +27,10 @@ const ROLE_COLORS = {
 };
 
 const ProfileScreen = ({ navigation }) => {
-  const { user, logout } = useAuth();
+  const { user, logout, updateUser } = useAuth();
+  const [name, setName] = useState(user?.name || '');
+  const [email, setEmail] = useState(user?.email || '');
+  const [saving, setSaving] = useState(false);
 
   const roleLabel = ROLE_LABELS[user?.role] || user?.role || 'User';
   const roleColor = ROLE_COLORS[user?.role] || '#1565C0';
@@ -37,6 +43,23 @@ const ProfileScreen = ({ navigation }) => {
       { text: 'Cancel', style: 'cancel' },
       { text: 'Sign Out', style: 'destructive', onPress: logout },
     ]);
+  };
+
+  const handleSave = async () => {
+    try {
+      setSaving(true);
+      const payload = {
+        name: name.trim(),
+        email: email.trim(),
+      };
+      const updated = await userApi.updateProfile(payload);
+      await updateUser({ ...user, ...updated });
+      Alert.alert('Success', 'Profile updated');
+    } catch (error) {
+      Alert.alert('Error', error.response?.data?.error || error.message || 'Failed to update profile');
+    } finally {
+      setSaving(false);
+    }
   };
 
   const menuItems = [
@@ -130,6 +153,27 @@ const ProfileScreen = ({ navigation }) => {
           </View>
         </View>
       )}
+
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Profile Details</Text>
+        <View style={styles.formCard}>
+          <Input
+            label="Full Name"
+            value={name}
+            onChangeText={setName}
+            placeholder="Your name"
+          />
+          <Input
+            label="Email"
+            value={email}
+            onChangeText={setEmail}
+            placeholder="you@example.com"
+            keyboardType="email-address"
+            autoCapitalize="none"
+          />
+          <Button title="Save Changes" onPress={handleSave} loading={saving} />
+        </View>
+      </View>
 
       {/* Sign out */}
       <View style={styles.section}>
@@ -261,6 +305,16 @@ const styles = StyleSheet.create({
     fontSize: 22,
     color: '#c8c8d8',
     fontWeight: '300',
+  },
+  formCard: {
+    backgroundColor: '#ffffff',
+    borderRadius: 14,
+    padding: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.06,
+    shadowRadius: 4,
+    elevation: 2,
   },
   signOutButton: {
     backgroundColor: '#ffffff',

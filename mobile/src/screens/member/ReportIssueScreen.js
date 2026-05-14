@@ -16,6 +16,7 @@ import PhotoUploader from '../../components/issues/PhotoUploader';
 import { VALID_CATEGORIES } from '../../utils/constants';
 import issueApi from '../../api/issueApi';
 import { useNotification } from '../../utils/NotificationContext';
+import { useAuth } from '../../auth/AuthContext';
 
 const ReportIssueScreen = ({ navigation }) => {
   const [formData, setFormData] = useState({
@@ -29,6 +30,7 @@ const ReportIssueScreen = ({ navigation }) => {
   const [errors, setErrors] = useState({});
   const [showCategoryPicker, setShowCategoryPicker] = useState(false);
   const { showError, showSuccess } = useNotification();
+  const { user } = useAuth();
 
   const categories = Object.keys(VALID_CATEGORIES).map(key => ({
     label: key.replace('_', ' '),
@@ -56,7 +58,7 @@ const ReportIssueScreen = ({ navigation }) => {
 
       const issueData = {
         ...formData,
-        photos,
+        imageUrl: photos[0],
       };
 
       await issueApi.createIssue(issueData);
@@ -153,6 +155,7 @@ const ReportIssueScreen = ({ navigation }) => {
             <PhotoUploader
               photos={photos}
               onUpload={(uploadedPhotos) => setPhotos(uploadedPhotos)}
+              userId={user?.id}
             />
 
             <Button

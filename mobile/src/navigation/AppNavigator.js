@@ -23,6 +23,10 @@ import AssignedTasksScreen from '../screens/worker/AssignedTasksScreen';
 // Manager screens
 import FMDashboard from '../screens/manager/FMDashboard';
 import WorkerMgmtScreen from '../screens/manager/WorkerMgmtScreen';
+import AddWorkerScreen from '../screens/manager/AddWorkerScreen';
+import IssueListScreen from '../screens/manager/IssueListScreen';
+import ReportsScreen from '../screens/manager/ReportsScreen';
+import WorkerDetailScreen from '../screens/manager/WorkerDetailScreen';
 
 // Admin screens
 import UserMgmtScreen from '../screens/admin/UserMgmtScreen';
@@ -212,9 +216,29 @@ const ManagerStack = () => (
       component={ManagerTabs}
     />
     <Stack.Screen
+      name="AddWorker"
+      component={AddWorkerScreen}
+      options={{ headerShown: true, title: 'Add Worker' }}
+    />
+    <Stack.Screen
       name="IssueDetail"
       component={IssueDetailScreen}
       options={{ headerShown: true, title: 'Issue Details' }}
+    />
+    <Stack.Screen
+      name="IssueList"
+      component={IssueListScreen}
+      options={{ headerShown: true, title: 'Issue List' }}
+    />
+    <Stack.Screen
+      name="Reports"
+      component={ReportsScreen}
+      options={{ headerShown: true, title: 'Reports' }}
+    />
+    <Stack.Screen
+      name="WorkerDetail"
+      component={WorkerDetailScreen}
+      options={{ headerShown: true, title: 'Worker Details' }}
     />
   </Stack.Navigator>
 );

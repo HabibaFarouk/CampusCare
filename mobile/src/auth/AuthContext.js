@@ -1,6 +1,7 @@
 import React, { createContext, useState, useEffect, useContext } from 'react';
-import * as SecureStore from 'expo-secure-store';
+import { storage } from '../utils/secureStorage';
 import { setUnauthorizedHandler } from '../api/client';
+import { API_BASE_URL } from '../config/api';
 
 const AuthContext = createContext({});
 
@@ -10,9 +11,9 @@ export const AuthProvider = ({ children }) => {
   const [tokenExpiry, setTokenExpiry] = useState(null);
 
   const clearSession = async () => {
-    await SecureStore.deleteItemAsync('accessToken');
-    await SecureStore.deleteItemAsync('userData');
-    await SecureStore.deleteItemAsync('tokenExpiry');
+    await storage.deleteItemAsync('accessToken');
+    await storage.deleteItemAsync('userData');
+    await storage.deleteItemAsync('tokenExpiry');
     setUser(null);
     setTokenExpiry(null);
   };
@@ -27,9 +28,9 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     const loadUser = async () => {
       try {
-        const token = await SecureStore.getItemAsync('accessToken');
-        const userData = await SecureStore.getItemAsync('userData');
-        const expiry = await SecureStore.getItemAsync('tokenExpiry');
+        const token = await storage.getItemAsync('accessToken');
+        const userData = await storage.getItemAsync('userData');
+        const expiry = await storage.getItemAsync('tokenExpiry');
 
         if (token && userData) {
           if (expiry && Date.now() >= parseInt(expiry)) {
@@ -60,8 +61,7 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (email, password) => {
     try {
-      const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://192.168.1.10:3000';
-      const response = await fetch(`${API_URL}/auth/login`, {
+      const response = await fetch(`${API_BASE_URL}/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
@@ -76,9 +76,9 @@ export const AuthProvider = ({ children }) => {
       // Token expires in 7 days (matches backend JWT config)
       const expiryTime = Date.now() + 7 * 24 * 60 * 60 * 1000;
 
-      await SecureStore.setItemAsync('accessToken', data.accessToken);
-      await SecureStore.setItemAsync('userData', JSON.stringify(data.user));
-      await SecureStore.setItemAsync('tokenExpiry', expiryTime.toString());
+      await storage.setItemAsync('accessToken', data.accessToken);
+      await storage.setItemAsync('userData', JSON.stringify(data.user));
+      await storage.setItemAsync('tokenExpiry', expiryTime.toString());
 
       setTokenExpiry(expiryTime);
       setUser(data.user);
@@ -90,8 +90,7 @@ export const AuthProvider = ({ children }) => {
 
   const register = async (name, email, password, role) => {
     try {
-      const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://192.168.1.10:3000';
-      const response = await fetch(`${API_URL}/auth/register`, {
+      const response = await fetch(`${API_BASE_URL}/auth/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name, email, password, role }),
@@ -106,9 +105,9 @@ export const AuthProvider = ({ children }) => {
       // Auto-login if the backend returned a token
       if (data.accessToken && data.user) {
         const expiryTime = Date.now() + 7 * 24 * 60 * 60 * 1000;
-        await SecureStore.setItemAsync('accessToken', data.accessToken);
-        await SecureStore.setItemAsync('userData', JSON.stringify(data.user));
-        await SecureStore.setItemAsync('tokenExpiry', expiryTime.toString());
+        await storage.setItemAsync('accessToken', data.accessToken);
+        await storage.setItemAsync('userData', JSON.stringify(data.user));
+        await storage.setItemAsync('tokenExpiry', expiryTime.toString());
         setTokenExpiry(expiryTime);
         setUser(data.user);
       }
@@ -123,8 +122,13 @@ export const AuthProvider = ({ children }) => {
     await clearSession();
   };
 
+  const updateUser = async (nextUser) => {
+    setUser(nextUser);
+    await storage.setItemAsync('userData', JSON.stringify(nextUser));
+  };
+
   return (
-    <AuthContext.Provider value={{ user, loading, login, register, logout }}>
+    <AuthContext.Provider value={{ user, loading, login, register, logout, updateUser }}>
       {children}
     </AuthContext.Provider>
   );

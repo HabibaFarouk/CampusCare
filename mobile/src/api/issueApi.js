@@ -2,7 +2,11 @@ import client from './client';
 
 const issueApi = {
   createIssue: async (issueData) => {
-    const response = await client.post('/issues', issueData);
+    const payload = {
+      ...issueData,
+      imageUrl: issueData?.imageUrl || issueData?.photos?.[0],
+    };
+    const response = await client.post('/issues', payload);
     return response.data;
   },
 
@@ -19,7 +23,7 @@ const issueApi = {
   },
 
   getIssue: async (issueId) => {
-    const response = await client.get(`/issues/${issueId}`);
+    const response = await client.get(`/issues/${issueId}/status`);
     return response.data;
   },
 
@@ -41,8 +45,14 @@ const issueApi = {
     return response.data;
   },
 
+  // Manager: PUT /issues/:id/close
+  closeIssue: async (issueId) => {
+    const response = await client.put(`/issues/${issueId}/close`);
+    return response.data;
+  },
+
   addComment: async (issueId, comment) => {
-    const response = await client.post(`/issues/${issueId}/comments`, { comment });
+    const response = await client.post(`/issues/${issueId}/comments`, { text: comment });
     return response.data;
   },
 
@@ -52,11 +62,13 @@ const issueApi = {
   },
 
   uploadPhoto: async (issueId, photoData) => {
-    const formData = new FormData();
-    formData.append('photo', photoData);
-    const response = await client.post(`/issues/${issueId}/photo`, formData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-    });
+    const photoUrl = typeof photoData === 'string' ? photoData : photoData?.uri;
+    const response = await client.post(`/issues/${issueId}/photo`, { photoUrl });
+    return response.data;
+  },
+
+  deleteMyIssue: async (issueId) => {
+    const response = await client.delete(`/issues/${issueId}/member`);
     return response.data;
   },
 };

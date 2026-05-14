@@ -3,7 +3,7 @@ import client from './client';
 const managerApi = {
   getWorkers: async (filters = {}) => {
     const response = await client.get('/manager/workers', { params: filters });
-    return response.data;
+    return response.data?.data || [];
   },
 
   getWorker: async (workerId) => {
@@ -30,8 +30,9 @@ const managerApi = {
 
   // Backend route: PUT /manager/workers/:id/status
   updateWorkerStatus: async (workerId, isActive) => {
-    const response = await client.put(`/manager/workers/${workerId}/status`, { isActive });
-    return response.data;
+    const status = isActive ? 'active' : 'inactive';
+    const response = await client.put(`/manager/workers/${workerId}/status`, { status });
+    return response.data?.data || response.data;
   },
 
   getAllIssues: async (filters = {}) => {
