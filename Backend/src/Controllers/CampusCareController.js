@@ -612,11 +612,14 @@ exports.deleteIssue = async (req, res) => {
   if (!Number.isInteger(id) || id <= 0) return res.status(400).json({ error: 'Invalid ticket id' });
 
   try {
-    await prisma.ticket.delete({
-      where: { id }
-    });
+    // Remove dependent records first to avoid foreign key constraint errors
+    await prisma.$transaction([
+      prisma.comment.deleteMany({ where: { ticketId: id } }),
+      prisma.auditLog.deleteMany({ where: { ticketId: id } }),
+      prisma.ticket.delete({ where: { id } }),
+    ]);
 
-    return res.status(200).json({ message: "Issue deleted successfully" });
+    return res.status(200).json({ message: 'Issue deleted successfully' });
   } catch (err) {
     if (err.code === 'P2025') {
       return res.status(404).json({ error: 'Ticket not found' });
@@ -1481,7 +1484,13 @@ exports.deleteMyIssue = async (req, res) => {
       return res.status(400).json({ error: 'Only unassigned submitted issues can be deleted' });
     }
 
-    await prisma.ticket.delete({ where: { id } });
+    // Remove dependent records first to avoid foreign key constraint errors
+    await prisma.$transaction([
+      prisma.comment.deleteMany({ where: { ticketId: id } }),
+      prisma.auditLog.deleteMany({ where: { ticketId: id } }),
+      prisma.ticket.delete({ where: { id } }),
+    ]);
+
     return res.status(200).json({ message: 'Issue deleted' });
   } catch (err) {
     return res.status(500).json({ error: err.message });

@@ -167,16 +167,33 @@ const IssueDetailScreen = ({ route, navigation }) => {
   };
 
   const handleDelete = async () => {
-    try {
-      setStatusUpdating(true);
-      await issueApi.deleteMyIssue(issueId);
-      Alert.alert('Success', 'Issue deleted');
-      navigation.goBack();
-    } catch (error) {
-      Alert.alert('Error', 'Failed to delete issue');
-    } finally {
-      setStatusUpdating(false);
-    }
+    Alert.alert(
+      'Confirm Delete',
+      'Are you sure you want to delete this issue? This action cannot be undone.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              setStatusUpdating(true);
+              if (user?.role === 'FACILITY_MANAGER' || user?.role === 'ADMIN') {
+                await issueApi.deleteIssue(issueId);
+              } else {
+                await issueApi.deleteMyIssue(issueId);
+              }
+              Alert.alert('Success', 'Issue deleted');
+              navigation.goBack();
+            } catch (error) {
+              Alert.alert('Error', 'Failed to delete issue');
+            } finally {
+              setStatusUpdating(false);
+            }
+          },
+        },
+      ]
+    );
   };
 
   const handleAddComment = async () => {
@@ -328,6 +345,15 @@ const IssueDetailScreen = ({ route, navigation }) => {
             size="sm"
             disabled={issue.status !== 'FINISHED' || statusUpdating}
             loading={statusUpdating}
+          />
+          <Button
+            title="Delete Issue"
+            onPress={handleDelete}
+            size="sm"
+            variant="danger"
+            disabled={statusUpdating}
+            loading={statusUpdating}
+            style={{ marginTop: 8 }}
           />
         </View>
       )}

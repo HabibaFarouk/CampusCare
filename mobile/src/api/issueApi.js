@@ -81,6 +81,12 @@ const issueApi = {
     return response.data;
   },
 
+  // Manager/Admin: DELETE /issues/:id
+  deleteIssue: async (issueId) => {
+    const response = await client.delete(`/issues/${issueId}`);
+    return response.data;
+  },
+
   updateMyIssue: async (issueId, payload) => {
     const response = await client.put(`/issues/${issueId}/member`, payload);
     return response.data;
