@@ -9,7 +9,13 @@ const IssueCard = ({ issue, onPress }) => {
       ? issue.assignedTo.name || issue.assignedTo.email
       : issue.assignedTo;
 
-  const previewImage = issue.imageUrl || issue.completionPhotoUrl;
+  const previewCandidate = issue.imageUrl || issue.completionPhotoUrl;
+  const previewImage =
+    previewCandidate &&
+    !String(previewCandidate).startsWith('file://') &&
+    !String(previewCandidate).startsWith('content://')
+      ? previewCandidate
+      : null;
 
   return (
     <Card onPress={onPress} elevated>

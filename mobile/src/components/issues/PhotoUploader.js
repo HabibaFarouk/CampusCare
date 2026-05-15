@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -16,20 +16,38 @@ const PhotoUploader = ({ photos = [], onUpload, loading = false, userId }) => {
   const [selectedPhotos, setSelectedPhotos] = useState([]);
   const [uploading, setUploading] = useState(false);
 
-  useEffect(() => {
-    const requestPermissions = async () => {
-      await ImagePicker.requestCameraPermissionsAsync();
-      await ImagePicker.requestMediaLibraryPermissionsAsync();
-    };
-    requestPermissions();
-  }, []);
+  const ensureCameraPermission = async () => {
+    const current = await ImagePicker.getCameraPermissionsAsync();
+    if (current.status === 'granted') return true;
+    const next = await ImagePicker.requestCameraPermissionsAsync();
+    if (next.status !== 'granted') {
+      Alert.alert('Permission required', 'Camera access is needed to take a photo.');
+      return false;
+    }
+    return true;
+  };
+
+  const ensureLibraryPermission = async () => {
+    const current = await ImagePicker.getMediaLibraryPermissionsAsync();
+    if (current.status === 'granted') return true;
+    const next = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (next.status !== 'granted') {
+      Alert.alert('Permission required', 'Media library access is needed to pick a photo.');
+      return false;
+    }
+    return true;
+  };
 
   const pickImage = async () => {
+    const hasPermission = await ensureLibraryPermission();
+    if (!hasPermission) return;
+
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: [ImagePicker.MediaType.Images],
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: true,
       aspect: [4, 3],
-      quality: 1,
+      base64: true,
+      quality: 0.9,
     });
 
     if (!result.canceled) {
@@ -39,10 +57,14 @@ const PhotoUploader = ({ photos = [], onUpload, loading = false, userId }) => {
   };
 
   const takePhoto = async () => {
+    const hasPermission = await ensureCameraPermission();
+    if (!hasPermission) return;
+
     const result = await ImagePicker.launchCameraAsync({
       allowsEditing: true,
       aspect: [4, 3],
-      quality: 1,
+      base64: true,
+      quality: 0.9,
     });
 
     if (!result.canceled) {
@@ -54,27 +76,24 @@ const PhotoUploader = ({ photos = [], onUpload, loading = false, userId }) => {
   const uploadSelectedAsset = async (asset) => {
     try {
       setUploading(true);
+      console.log('[PhotoUploader] Upload start', { uri: asset.uri });
       const url = await uploadImageToSupabase({
         uri: asset.uri,
+        base64: asset.base64,
         userId,
         mimeType: asset.mimeType,
       });
       const nextPhotos = [...selectedPhotos, url];
       setSelectedPhotos(nextPhotos);
+      console.log('[PhotoUploader] Upload success', { publicUrl: url });
       if (onUpload) {
-        onUpload(nextPhotos);
+        onUpload([url]);
       }
     } catch (error) {
+      console.log('[PhotoUploader] Upload failed', { message: error.message });
       Alert.alert('Upload Error', error.message || 'Failed to upload image');
     } finally {
       setUploading(false);
-    }
-  };
-
-  const handleUpload = async () => {
-    if (selectedPhotos.length > 0 && onUpload) {
-      await onUpload(selectedPhotos);
-      setSelectedPhotos([]);
     }
   };
 
@@ -121,29 +140,27 @@ const PhotoUploader = ({ photos = [], onUpload, loading = false, userId }) => {
 
       {/* Upload buttons */}
       <View style={styles.buttonContainer}>
-        <TouchableOpacity style={styles.button} onPress={takePhoto}>
+        <TouchableOpacity
+          style={[styles.button, (loading || uploading) && styles.disabledButton]}
+          onPress={takePhoto}
+          disabled={loading || uploading}
+        >
           <Text style={styles.buttonText}>📷 Take Photo</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.button} onPress={pickImage}>
+        <TouchableOpacity
+          style={[styles.button, (loading || uploading) && styles.disabledButton]}
+          onPress={pickImage}
+          disabled={loading || uploading}
+        >
           <Text style={styles.buttonText}>🖼️ Pick Photo</Text>
         </TouchableOpacity>
       </View>
 
-      {/* Upload button */}
-      {selectedPhotos.length > 0 && (
-        <TouchableOpacity
-          style={[styles.uploadButton, (loading || uploading) && styles.disabledButton]}
-          onPress={handleUpload}
-          disabled={loading || uploading}
-        >
-          {loading || uploading ? (
-            <ActivityIndicator color="#fff" />
-          ) : (
-            <Text style={styles.uploadButtonText}>
-              Upload {selectedPhotos.length} Photo{selectedPhotos.length !== 1 ? 's' : ''}
-            </Text>
-          )}
-        </TouchableOpacity>
+      {(loading || uploading) && (
+        <View style={styles.loadingRow}>
+          <ActivityIndicator color="#34C759" />
+          <Text style={styles.loadingText}>Uploading...</Text>
+        </View>
       )}
     </View>
   );
@@ -189,16 +206,16 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '500',
   },
-  uploadButton: {
-    backgroundColor: '#34C759',
-    paddingVertical: 12,
-    borderRadius: 8,
+  loadingRow: {
+    flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 6,
   },
-  uploadButtonText: {
-    color: '#fff',
-    fontWeight: '600',
-    fontSize: 14,
+  loadingText: {
+    marginLeft: 8,
+    fontSize: 13,
+    color: '#1d1d1b',
   },
   disabledButton: {
     opacity: 0.6,

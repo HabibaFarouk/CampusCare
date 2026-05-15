@@ -11,10 +11,12 @@ import {
 } from 'react-native';
 import Input from '../../components/common/Input';
 import Button from '../../components/common/Button';
+import PhotoUploader from '../../components/issues/PhotoUploader';
 import { VALID_CATEGORIES } from '../../utils/constants';
 import issueApi from '../../api/issueApi';
 import { useNotification } from '../../utils/NotificationContext';
 import { colors, type, radius, spacing, shadow } from '../../theme';
+import { useAuth } from '../../auth/AuthContext';
 
 const ReportIssueScreen = ({ navigation }) => {
   const [formData, setFormData] = useState({
@@ -27,12 +29,19 @@ const ReportIssueScreen = ({ navigation }) => {
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
   const [showCategoryPicker, setShowCategoryPicker] = useState(false);
+  const [photoUrls, setPhotoUrls] = useState([]);
   const { showError, showSuccess } = useNotification();
+  const { user } = useAuth();
 
   const categories = Object.keys(VALID_CATEGORIES).map(key => ({
     label: key.replace('_', ' '),
     value: VALID_CATEGORIES[key]
   }));
+
+  const handlePhotoUpload = (urls) => {
+    if (!Array.isArray(urls) || urls.length === 0) return;
+    setPhotoUrls((prev) => Array.from(new Set([...prev, ...urls])));
+  };
 
   const handleSubmit = async () => {
     try {
@@ -58,14 +67,17 @@ const ReportIssueScreen = ({ navigation }) => {
         description: formData.description,
         category: formData.category,
         location: `${formData.building} - ${formData.locationDetail}`.trim(),
-        imageUrl: null, // Photo upload omitted for clean UI as requested
+        imageUrl: photoUrls[0] || null,
       };
 
-      await issueApi.createIssue(issueData);
+      console.log('[ReportIssue] Create issue start', { imageUrl: issueData.imageUrl });
+      const created = await issueApi.createIssue(issueData);
+      console.log('[ReportIssue] Create issue success', { id: created?.id, imageUrl: created?.imageUrl });
       showSuccess('Issue reported successfully');
       setTimeout(() => navigation.goBack(), 1500);
     } catch (error) {
       const errorMsg = error.response?.data?.message || error.response?.data?.error || error.message || 'Failed to report issue';
+      console.log('[ReportIssue] Create issue failure', { message: errorMsg });
       showError(errorMsg);
     } finally {
       setLoading(false);
@@ -165,9 +177,12 @@ const ReportIssueScreen = ({ navigation }) => {
 
             <View style={styles.fieldContainer}>
               <Text style={styles.label}>Photo (optional)</Text>
-              <View style={styles.fileInput}>
-                <Text style={styles.fileInputText}>Choose File no file selected</Text>
-              </View>
+              <PhotoUploader
+                photos={[]}
+                onUpload={handlePhotoUpload}
+                loading={loading}
+                userId={user?.id}
+              />
             </View>
 
             <View style={styles.buttonRow}>
@@ -281,18 +296,6 @@ const styles = StyleSheet.create({
   },
   categoryOptionTextSelected: {
     fontWeight: 'bold',
-  },
-  fileInput: {
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 12,
-  },
-  fileInputText: {
-    color: colors.text,
-    fontSize: 16,
   },
   buttonRow: {
     flexDirection: 'row',

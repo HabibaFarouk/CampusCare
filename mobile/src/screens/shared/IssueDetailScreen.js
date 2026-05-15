@@ -52,7 +52,9 @@ const IssueDetailScreen = ({ route, navigation }) => {
         issueApi.getIssue(issueId),
         issueApi.getComments(issueId),
       ]);
-      const photos = [issueData?.imageUrl, issueData?.completionPhotoUrl].filter(Boolean);
+      const photos = [issueData?.imageUrl, issueData?.completionPhotoUrl].filter(
+        (url) => url && !String(url).startsWith('file://') && !String(url).startsWith('content://')
+      );
       const normalized = {
         ...issueData,
         assignedToLabel:
@@ -73,12 +75,23 @@ const IssueDetailScreen = ({ route, navigation }) => {
   const handlePhotoUpload = async (photos) => {
     try {
       setUploading(true);
+      if (!Array.isArray(photos) || photos.length === 0) {
+        return;
+      }
+      console.log('[IssueDetail] Photo upload start', { issueId, count: photos.length });
       for (const photo of photos) {
         await issueApi.uploadPhoto(issueId, photo);
       }
+      setIssue((prev) => {
+        const existing = prev?.photos || [];
+        const merged = Array.from(new Set([...existing, ...photos]));
+        return { ...prev, photos: merged };
+      });
+      console.log('[IssueDetail] Photo upload success', { issueId });
       Alert.alert('Success', 'Photos uploaded successfully');
       loadIssueDetails();
     } catch (error) {
+      console.log('[IssueDetail] Photo upload failure', { message: error.message });
       Alert.alert('Error', 'Failed to upload photos');
     } finally {
       setUploading(false);
