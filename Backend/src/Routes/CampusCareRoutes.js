@@ -30,6 +30,7 @@ router.put('/issues/:id/member', authenticate, authorize('MEMBER', 'ADMIN'), con
 router.delete('/issues/:id/member', authenticate, authorize('MEMBER', 'ADMIN'), controller.deleteMyIssue);
 // Any authenticated user can check a ticket's status (controller handles specific permission checks)
 router.get('/issues/:id/status', authenticate, controller.getIssueStatus);
+router.get('/api/issues/:id', authenticate, controller.getIssueStatus);
 
 // ==========================================
 // 2.2 Facility Manager Flows (Issue Management)
