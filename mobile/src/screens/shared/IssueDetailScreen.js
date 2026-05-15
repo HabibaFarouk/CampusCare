@@ -6,6 +6,9 @@ import {
   Text,
   ActivityIndicator,
   Alert,
+  SafeAreaView,
+  Platform,
+  StatusBar,
 } from 'react-native';
 import StatusBadge from '../../components/common/StatusBadge';
 import CommentList from '../../components/issues/CommentList';
@@ -124,6 +127,19 @@ const IssueDetailScreen = ({ route, navigation }) => {
     }
   };
 
+  const handleManagerStatus = async (nextStatus) => {
+    try {
+      setStatusUpdating(true);
+      await issueApi.updateIssueStatus(issueId, nextStatus);
+      await loadIssueDetails();
+      Alert.alert('Success', `Issue set to ${nextStatus.replace('_', ' ')}`);
+    } catch (error) {
+      Alert.alert('Error', 'Failed to update issue status');
+    } finally {
+      setStatusUpdating(false);
+    }
+  };
+
   const handleFinish = async () => {
     try {
       setStatusUpdating(true);
@@ -199,7 +215,8 @@ const IssueDetailScreen = ({ route, navigation }) => {
   }
 
   return (
-    <ScrollView style={styles.container}>
+    <SafeAreaView style={styles.safeArea}>
+      <ScrollView style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.title}>{issue.title}</Text>
         <StatusBadge status={issue.status} size="lg" />
@@ -260,9 +277,17 @@ const IssueDetailScreen = ({ route, navigation }) => {
         </View>
       )}
 
-      {user?.role === 'MEMBER' && issue.createdById === user?.id && issue.status === 'SUBMITTED' && (
+      {user?.role === 'MEMBER' && issue.createdById === user?.id && issue.status === 'SUBMITTED' && !issue.assignedToId && (
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Member Actions</Text>
+          <Button
+            title="Edit Issue"
+            onPress={() => navigation.navigate('EditIssue', { issue })}
+            size="sm"
+            disabled={statusUpdating}
+            loading={statusUpdating}
+            style={styles.actionButton}
+          />
           <Button
             title="Delete Issue"
             onPress={handleDelete}
@@ -277,6 +302,26 @@ const IssueDetailScreen = ({ route, navigation }) => {
       {(user?.role === 'FACILITY_MANAGER' || user?.role === 'ADMIN') && (
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Manager Actions</Text>
+          {issue.status === 'ASSIGNED' && (
+            <Button
+              title="Mark In Progress"
+              onPress={() => handleManagerStatus('IN_PROGRESS')}
+              size="sm"
+              disabled={statusUpdating}
+              loading={statusUpdating}
+              style={styles.actionButton}
+            />
+          )}
+          {issue.status === 'IN_PROGRESS' && (
+            <Button
+              title="Mark Finished"
+              onPress={() => handleManagerStatus('FINISHED')}
+              size="sm"
+              disabled={statusUpdating}
+              loading={statusUpdating}
+              style={styles.actionButton}
+            />
+          )}
           <Button
             title="Finalize Issue"
             onPress={handleResolve}
@@ -335,11 +380,17 @@ const IssueDetailScreen = ({ route, navigation }) => {
       <View style={styles.actions}>
         <Button title="Back" onPress={() => navigation.goBack()} />
       </View>
-    </ScrollView>
+      </ScrollView>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: '#f6f1ec',
+    paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 0) : 0,
+  },
   container: {
     flex: 1,
     backgroundColor: '#f6f1ec',
@@ -406,6 +457,9 @@ const styles = StyleSheet.create({
   actionButton: {
     flex: 1,
     marginRight: 8,
+  },
+  actionButtonLast: {
+    flex: 1,
   },
   workerRow: {
     flexDirection: 'row',

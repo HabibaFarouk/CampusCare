@@ -80,6 +80,11 @@ const issueApi = {
     const response = await client.delete(`/issues/${issueId}/member`);
     return response.data;
   },
+
+  updateMyIssue: async (issueId, payload) => {
+    const response = await client.put(`/issues/${issueId}/member`, payload);
+    return response.data;
+  },
 };
 
 export default issueApi;

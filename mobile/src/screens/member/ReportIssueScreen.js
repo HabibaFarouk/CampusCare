@@ -8,6 +8,8 @@ import {
   Platform,
   Text,
   TouchableOpacity,
+  SafeAreaView,
+  StatusBar,
 } from 'react-native';
 import Input from '../../components/common/Input';
 import Button from '../../components/common/Button';
@@ -89,12 +91,13 @@ const ReportIssueScreen = ({ navigation }) => {
   };
 
   return (
-    <KeyboardAvoidingView
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      style={styles.container}
-    >
-      <ScrollView contentContainerStyle={styles.scrollView}>
-        <View style={styles.card}>
+    <SafeAreaView style={styles.safeArea}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={styles.container}
+      >
+        <ScrollView contentContainerStyle={styles.scrollView}>
+          <View style={styles.card}>
           <View style={styles.header}>
             <Text style={styles.title}>Report a new issue</Text>
             <Text style={styles.subtitle}>Be specific — clear tickets get fixed faster.</Text>
@@ -203,13 +206,19 @@ const ReportIssueScreen = ({ navigation }) => {
               />
             </View>
           </View>
-        </View>
-      </ScrollView>
-    </KeyboardAvoidingView>
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: colors.bg,
+    paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 0) : 0,
+  },
   container: {
     flex: 1,
     backgroundColor: colors.bg,

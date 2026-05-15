@@ -7,6 +7,9 @@ import {
   ActivityIndicator,
   Alert,
   Text,
+  SafeAreaView,
+  Platform,
+  StatusBar,
 } from 'react-native';
 import IssueCard from '../../components/issues/IssueCard';
 import Button from '../../components/common/Button';
@@ -70,7 +73,8 @@ const MyIssuesScreen = ({ navigation }) => {
   }
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.safeArea}>
+      <View style={styles.container}>
       <View style={styles.filterContainer}>
         <Dropdown
           value={filter}
@@ -107,11 +111,17 @@ const MyIssuesScreen = ({ navigation }) => {
           size="lg"
         />
       </View>
-    </View>
+      </View>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: '#f6f1ec',
+    paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 0) : 0,
+  },
   container: {
     flex: 1,
     backgroundColor: '#f6f1ec',

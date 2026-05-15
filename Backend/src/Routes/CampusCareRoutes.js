@@ -26,6 +26,7 @@ router.put('/notifications/read-all', authenticate, controller.markAllNotificati
 // Members can create issues and view their own
 router.post('/issues', authenticate, authorize('MEMBER', 'ADMIN'), controller.createIssue);
 router.get('/issues/my', authenticate, authorize('MEMBER', 'ADMIN'), controller.getMyIssues);
+router.put('/issues/:id/member', authenticate, authorize('MEMBER', 'ADMIN'), controller.updateMyIssue);
 router.delete('/issues/:id/member', authenticate, authorize('MEMBER', 'ADMIN'), controller.deleteMyIssue);
 // Any authenticated user can check a ticket's status (controller handles specific permission checks)
 router.get('/issues/:id/status', authenticate, controller.getIssueStatus);

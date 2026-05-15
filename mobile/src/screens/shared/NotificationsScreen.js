@@ -7,6 +7,9 @@ import {
   ActivityIndicator,
   TouchableOpacity,
   RefreshControl,
+  SafeAreaView,
+  Platform,
+  StatusBar,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import notificationApi from '../../api/notificationApi';
@@ -101,7 +104,8 @@ const NotificationsScreen = ({ navigation }) => {
   }
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.safeArea}>
+      <View style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.title}>Notifications</Text>
         <TouchableOpacity
@@ -128,11 +132,17 @@ const NotificationsScreen = ({ navigation }) => {
           <Text style={styles.emptyText}>No notifications yet</Text>
         </View>
       )}
-    </View>
+      </View>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: colors.bg,
+    paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 0) : 0,
+  },
   container: {
     flex: 1,
     backgroundColor: colors.bg,

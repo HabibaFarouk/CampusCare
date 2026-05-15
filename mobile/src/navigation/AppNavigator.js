@@ -18,6 +18,7 @@ import NotificationsScreen from '../screens/shared/NotificationsScreen';
 import MemberDashboardScreen from '../screens/member/MemberDashboardScreen';
 import MyIssuesScreen from '../screens/member/MyIssuesScreen';
 import ReportIssueScreen from '../screens/member/ReportIssueScreen';
+import EditIssueScreen from '../screens/member/EditIssueScreen';
 import { Feather } from '@expo/vector-icons';
 
 // Worker screens
@@ -135,6 +136,11 @@ const MemberStack = () => (
       name="IssueDetail"
       component={IssueDetailScreen}
       options={{ headerShown: true, title: 'Issue Details' }}
+    />
+    <Stack.Screen
+      name="EditIssue"
+      component={EditIssueScreen}
+      options={{ headerShown: true, title: 'Edit Issue' }}
     />
   </Stack.Navigator>
 );

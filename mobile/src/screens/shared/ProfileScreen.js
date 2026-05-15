@@ -6,6 +6,9 @@ import {
   TouchableOpacity,
   Alert,
   ScrollView,
+  SafeAreaView,
+  Platform,
+  StatusBar,
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { useAuth } from '../../auth/AuthContext';
@@ -59,13 +62,14 @@ const ProfileScreen = ({ navigation }) => {
   };
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
-      <View style={styles.header}>
+    <SafeAreaView style={styles.safeArea}>
+      <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
+        <View style={styles.header}>
         <Text style={styles.pageTitle}>My Account</Text>
         <Text style={styles.pageSubtitle}>Manage your personal details and session.</Text>
-      </View>
+        </View>
 
-      <View style={styles.card}>
+        <View style={styles.card}>
         <Text style={styles.sectionTitle}>Profile</Text>
         <Text style={styles.sectionSubtitle}>Update your name, phone and photo.</Text>
         
@@ -124,12 +128,18 @@ const ProfileScreen = ({ navigation }) => {
             <Text style={styles.signOutText}>Sign out</Text>
           </TouchableOpacity>
         </View>
-      </View>
-    </ScrollView>
+        </View>
+      </ScrollView>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: colors.bg,
+    paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 0) : 0,
+  },
   container: {
     flex: 1,
     backgroundColor: colors.bg,

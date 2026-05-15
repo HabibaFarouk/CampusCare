@@ -436,6 +436,75 @@ exports.getMyIssues = async (req, res) => {
   }
 };
 
+exports.updateMyIssue = async (req, res) => {
+  const id = Number(req.params.id);
+  if (!Number.isInteger(id) || id <= 0) {
+    return res.status(400).json({ error: 'Invalid ticket id' });
+  }
+
+  const { title, description, category, location, imageUrl } = req.body;
+
+  try {
+    const ticket = await prisma.ticket.findUnique({
+      where: { id },
+      select: { id: true, createdById: true, assignedToId: true, status: true },
+    });
+
+    if (!ticket) return res.status(404).json({ error: 'Ticket not found' });
+
+    const role = String(req.user.role).toUpperCase();
+    if (role !== 'ADMIN' && ticket.createdById !== req.user.id) {
+      return res.status(403).json({ error: 'Not authorized to edit this ticket' });
+    }
+
+    if (ticket.assignedToId) {
+      return res.status(400).json({ error: 'Assigned tickets cannot be edited' });
+    }
+
+    if (ticket.status !== 'SUBMITTED') {
+      return res.status(400).json({ error: `Cannot edit ticket when status is ${ticket.status}` });
+    }
+
+    const updatePayload = {};
+    if (title != null) updatePayload.title = String(title).trim();
+    if (description != null) updatePayload.description = String(description).trim();
+    if (location != null) updatePayload.location = String(location).trim();
+    if (imageUrl !== undefined) updatePayload.imageUrl = imageUrl || null;
+
+    if (category != null) {
+      const cat = String(category).toUpperCase();
+      if (!VALID_CATEGORIES.includes(cat)) {
+        return res.status(400).json({ error: `Invalid category. Use one of: ${VALID_CATEGORIES.join(', ')}` });
+      }
+      updatePayload.category = cat;
+    }
+
+    if (Object.keys(updatePayload).length === 0) {
+      return res.status(400).json({ error: 'No fields provided for update' });
+    }
+
+    const updated = await prisma.ticket.update({
+      where: { id },
+      data: updatePayload,
+      include: {
+        createdBy: { select: { id: true, name: true, email: true } },
+        assignedTo: { select: { id: true, name: true, email: true } },
+      },
+    });
+
+    await createAuditLog({
+      ticketId: id,
+      changedById: req.user.id,
+      action: 'ISSUE_UPDATED',
+      newValue: `fields:${Object.keys(updatePayload).join(',')}`,
+    });
+
+    return res.status(200).json(updated);
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
+};
+
 exports.getIssueStatus = async (req, res) => {
   const id = Number(req.params.id);
   if (!Number.isInteger(id) || id <= 0) {
@@ -559,7 +628,7 @@ exports.deleteIssue = async (req, res) => {
 // 2.2 For Facility Managers (FM)
 exports.getAllIssues = async (req, res) => {
   try {
-    const { status, category } = req.query;
+    const { status, category, assignedToId, startDate, endDate } = req.query;
     const filter = {};
     if (status) {
       const s = String(status).toUpperCase();
@@ -575,6 +644,37 @@ exports.getAllIssues = async (req, res) => {
       }
       filter.category = c;
     }
+    if (assignedToId) {
+      const raw = String(assignedToId).trim().toLowerCase();
+      if (raw === 'unassigned' || raw === 'null') {
+        filter.assignedToId = null;
+      } else {
+        const parsed = Number(assignedToId);
+        if (!Number.isInteger(parsed) || parsed <= 0) {
+          return res.status(400).json({ error: 'assignedToId must be a valid id or "unassigned"' });
+        }
+        filter.assignedToId = parsed;
+      }
+    }
+    if (startDate || endDate) {
+      const createdAt = {};
+      if (startDate) {
+        const parsedStart = new Date(startDate);
+        if (Number.isNaN(parsedStart.getTime())) {
+          return res.status(400).json({ error: 'startDate must be a valid date string' });
+        }
+        createdAt.gte = parsedStart;
+      }
+      if (endDate) {
+        const parsedEnd = new Date(endDate);
+        if (Number.isNaN(parsedEnd.getTime())) {
+          return res.status(400).json({ error: 'endDate must be a valid date string' });
+        }
+        parsedEnd.setHours(23, 59, 59, 999);
+        createdAt.lte = parsedEnd;
+      }
+      filter.createdAt = createdAt;
+    }
 
     const tickets = await prisma.ticket.findMany({
       where: filter,
@@ -584,7 +684,20 @@ exports.getAllIssues = async (req, res) => {
       },
       orderBy: { createdAt: 'desc' },
     });
-    return res.status(200).json(tickets);
+
+    const prioritized = [...tickets].sort((a, b) => {
+      const aPriority = a.assignedToId ? 1 : 0;
+      const bPriority = b.assignedToId ? 1 : 0;
+      if (aPriority !== bPriority) return aPriority - bPriority;
+      if (!a.assignedToId && !b.assignedToId) {
+        const aSubmitted = a.status === 'SUBMITTED' ? 0 : 1;
+        const bSubmitted = b.status === 'SUBMITTED' ? 0 : 1;
+        if (aSubmitted !== bSubmitted) return aSubmitted - bSubmitted;
+      }
+      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+    });
+
+    return res.status(200).json(prioritized);
   } catch (err) {
     return res.status(500).json({ error: err.message });
   }
