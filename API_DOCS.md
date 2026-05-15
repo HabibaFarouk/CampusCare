@@ -30,6 +30,10 @@
       }
     }
     ```
+*   **Sample Error Responses:**
+    *   **400 Bad Request:** `{"error": "name, email, and password are required"}`
+    *   **400 Bad Request:** `{"error": "Invalid role. Use MEMBER, FACILITY_MANAGER, WORKER, or ADMIN"}`
+    *   **400 Bad Request:** `{"error": "Email already registered"}`
 
 ### Login User
 *   **Method:** `POST`
@@ -54,6 +58,11 @@
       }
     }
     ```
+*   **Sample Error Responses:**
+    *   **400 Bad Request:** `{"error": "email and password are required"}`
+    *   **401 Unauthorized:** `{"error": "User not found"}` OR `{"error": "Invalid password"}`
+    *   **403 Forbidden:** `{"error": "Account is deactivated"}`
+    *   **500 Internal Server Error:** `{"error": "Internal server error"}`
 
 ### Logout User
 *   **Method:** `POST`
@@ -66,6 +75,8 @@
       "message": "Logged out successfully"
     }
     ```
+*   **Sample Error Responses:**
+    *   **401 Unauthorized:** `{"error": "Unauthorized"}` (Standard from auth middleware)
 
 ### Forgot Password
 *   **Method:** `POST`
@@ -84,6 +95,9 @@
       "resetToken": "eyJhbGciOiJIUzI1NiIsInR..."
     }
     ```
+*   **Sample Error Responses:**
+    *   **404 Not Found:** `{"error": "User not found"}`
+    *   **500 Internal Server Error:** `{"error": "Internal server error message"}`
 
 ### Reset Password
 *   **Method:** `POST`
@@ -102,6 +116,9 @@
       "message": "Password has been reset successfully"
     }
     ```
+*   **Sample Error Responses:**
+    *   **400 Bad Request:** `{"error": "Token and new password are required"}`
+    *   **400 Bad Request:** `{"error": "Invalid or expired reset token"}`
 
 ### Update My Profile
 *   **Method:** `PUT`
@@ -126,6 +143,10 @@
       }
     }
     ```
+*   **Sample Error Responses:**
+    *   **400 Bad Request:** `{"error": "Nothing to update"}`
+    *   **409 Conflict:** `{"error": "Email already in use"}`
+    *   **500 Internal Server Error:** `{"error": "Failed to update profile"}`
 
 ---
 
@@ -148,6 +169,8 @@
       }
     ]
     ```
+*   **Sample Error Responses:**
+    *   **500 Internal Server Error:** `{"error": "Internal server error message"}`
 
 ### Mark Notification Read
 *   **Method:** `PUT`
@@ -160,6 +183,10 @@
       "message": "Notification marked as read"
     }
     ```
+*   **Sample Error Responses:**
+    *   **400 Bad Request:** `{"error": "Invalid notification id"}`
+    *   **404 Not Found:** `{"error": "Notification not found"}`
+    *   **500 Internal Server Error:** `{"error": "Internal server error message"}`
 
 ### Mark All Notifications Read
 *   **Method:** `PUT`
@@ -173,6 +200,8 @@
       "count": 3
     }
     ```
+*   **Sample Error Responses:**
+    *   **500 Internal Server Error:** `{"error": "Internal server error message"}`
 
 ---
 
@@ -211,6 +240,10 @@
       }
     }
     ```
+*   **Sample Error Responses:**
+    *   **400 Bad Request:** `{"error": "title, description, category, and location are required"}`
+    *   **400 Bad Request:** `{"error": "Invalid category. Use one of: MAINTENANCE, CLEANLINESS, SUSTAINABILITY"}`
+    *   **500 Internal Server Error:** `{"error": "Internal server error message"}`
 
 ### Get My Issues
 *   **Method:** `GET`
@@ -231,6 +264,9 @@
       }
     ]
     ```
+*   **Sample Error Responses:**
+    *   **400 Bad Request:** `{"error": "Invalid status. Use one of: SUBMITTED, ASSIGNED, IN_PROGRESS, FINISHED, FINALIZED, RESOLVED, CANCELLED"}`
+    *   **500 Internal Server Error:** `{"error": "Internal server error message"}`
 
 ### Update My Issue
 *   **Method:** `PUT`
@@ -259,6 +295,11 @@
       }
     }
     ```
+*   **Sample Error Responses:**
+    *   **400 Bad Request:** `{"error": "Invalid ticket id"}` OR `{"error": "Assigned tickets cannot be edited"}` OR `{"error": "Cannot edit ticket when status is ..."}` OR `{"error": "No fields provided for update"}`
+    *   **403 Forbidden:** `{"error": "Not authorized to edit this ticket"}`
+    *   **404 Not Found:** `{"error": "Ticket not found"}`
+    *   **500 Internal Server Error:** `{"error": "Internal server error message"}`
 
 ### Delete My Issue
 *   **Method:** `DELETE`
@@ -272,6 +313,11 @@
       "message": "Issue deleted"
     }
     ```
+*   **Sample Error Responses:**
+    *   **400 Bad Request:** `{"error": "Invalid ticket id"}` OR `{"error": "Only unassigned submitted issues can be deleted"}`
+    *   **403 Forbidden:** `{"error": "Not authorized to delete this ticket"}`
+    *   **404 Not Found:** `{"error": "Ticket not found"}`
+    *   **500 Internal Server Error:** `{"error": "Internal server error message"}`
 
 ### Get Issue Status (Two Routes)
 *   **Method:** `GET`
@@ -300,6 +346,11 @@
       }
     }
     ```
+*   **Sample Error Responses:**
+    *   **400 Bad Request:** `{"error": "Invalid ticket id"}`
+    *   **403 Forbidden:** `{"error": "Access denied"}`
+    *   **404 Not Found:** `{"error": "Ticket not found"}`
+    *   **500 Internal Server Error:** `{"error": "Internal server error message"}`
 
 ---
 
@@ -325,6 +376,9 @@
       }
     ]
     ```
+*   **Sample Error Responses:**
+    *   **400 Bad Request:** `{"error": "Invalid status..."}` OR `{"error": "Invalid category..."}` OR `{"error": "assignedToId must be a valid id..."}` OR `{"error": "startDate must be a valid date string"}`
+    *   **500 Internal Server Error:** `{"error": "Internal server error message"}`
 
 ### Get Prioritized Issues
 *   **Method:** `GET`
@@ -343,6 +397,8 @@
       }
     ]
     ```
+*   **Sample Error Responses:**
+    *   **500 Internal Server Error:** `{"error": "Internal server error message"}`
 
 ### Assign Issue to Worker
 *   **Method:** `PUT`
@@ -364,6 +420,10 @@
       "assignedTo": { "name": "Ahmed", "email": "ahmeds@gmail.com" }
     }
     ```
+*   **Sample Error Responses:**
+    *   **400 Bad Request:** `{"error": "Invalid ticket id"}` OR `{"error": "Valid workerId is required"}`
+    *   **404 Not Found:** `{"error": "Ticket not found"}` OR `{"error": "Worker not found"}`
+    *   **500 Internal Server Error:** `{"error": "Internal server error message"}`
 
 ### Update Issue Status
 *   **Method:** `PUT`
@@ -384,6 +444,10 @@
       "assignedTo": { "name": "Ahmed" }
     }
     ```
+*   **Sample Error Responses:**
+    *   **400 Bad Request:** `{"error": "Invalid ticket id"}` OR `{"error": "Invalid status..."}`
+    *   **404 Not Found:** `{"error": "Ticket not found"}`
+    *   **500 Internal Server Error:** `{"error": "Internal server error message"}`
 
 ### Close Issue (Finalize)
 *   **Method:** `PUT`
@@ -398,6 +462,10 @@
       "status": "FINALIZED"
     }
     ```
+*   **Sample Error Responses:**
+    *   **400 Bad Request:** `{"error": "Invalid ticket id"}` OR `{"error": "Ticket already finalized"}` OR `{"error": "Cannot finalize ticket when status is..."}`
+    *   **404 Not Found:** `{"error": "Ticket not found"}`
+    *   **500 Internal Server Error:** `{"error": "Internal server error message"}`
 
 ### Delete Issue (Manager/Admin override)
 *   **Method:** `DELETE`
@@ -410,6 +478,10 @@
       "message": "Issue deleted successfully"
     }
     ```
+*   **Sample Error Responses:**
+    *   **400 Bad Request:** `{"error": "Invalid ticket id"}`
+    *   **404 Not Found:** `{"error": "Ticket not found"}`
+    *   **500 Internal Server Error:** `{"error": "Internal server error message"}`
 
 ---
 
@@ -436,6 +508,9 @@
       }
     ]
     ```
+*   **Sample Error Responses:**
+    *   **401 Unauthorized:** `{"error": "Unauthorized"}`
+    *   **500 Internal Server Error:** `{"error": "Internal server error message"}`
 
 ### Start Issue
 *   **Method:** `PUT`
@@ -454,6 +529,11 @@
       "assignedTo": { "id": 3, "name": "Ahmed", "email": "ahmeds@gmail.com" }
     }
     ```
+*   **Sample Error Responses:**
+    *   **400 Bad Request:** `{"error": "Invalid ticket id"}` OR `{"error": "Ticket already started/finished/finalized"}` OR `{"error": "Cannot start ticket when status is..."}`
+    *   **403 Forbidden:** `{"error": "Not authorized to start this ticket"}`
+    *   **404 Not Found:** `{"error": "Ticket not found"}`
+    *   **500 Internal Server Error:** `{"error": "Internal server error message"}`
 
 ### Finish Issue
 *   **Method:** `PUT`
@@ -472,6 +552,11 @@
       "assignedTo": { "id": 3, "name": "Ahmed", "email": "ahmeds@gmail.com" }
     }
     ```
+*   **Sample Error Responses:**
+    *   **400 Bad Request:** `{"error": "Invalid ticket id"}` OR `{"error": "Ticket already finished/finalized"}` OR `{"error": "Cannot finish ticket when status is..."}`
+    *   **403 Forbidden:** `{"error": "Not authorized to finish this ticket"}`
+    *   **404 Not Found:** `{"error": "Ticket not found"}`
+    *   **500 Internal Server Error:** `{"error": "Internal server error message"}`
 
 ### Get Issue Comments
 *   **Method:** `GET`
@@ -495,6 +580,11 @@
       }
     ]
     ```
+*   **Sample Error Responses:**
+    *   **400 Bad Request:** `{"error": "Invalid ticket id"}`
+    *   **403 Forbidden:** `{"error": "Access denied"}`
+    *   **404 Not Found:** `{"error": "Ticket not found"}`
+    *   **500 Internal Server Error:** `{"error": "Internal server error message"}`
 
 ### Add Comment
 *   **Method:** `POST`
@@ -516,6 +606,11 @@
       "createdAt": "2026-05-15T12:00:00.000Z"
     }
     ```
+*   **Sample Error Responses:**
+    *   **400 Bad Request:** `{"error": "Invalid ticket id"}` OR `{"error": "Comment text is required"}` OR `{"error": "Ticket has no assignee; assign a worker first"}`
+    *   **403 Forbidden:** `{"error": "Only workers, facility managers, or admins can perform this action"}` OR `{"error": "Not authorized to comment on this ticket"}`
+    *   **404 Not Found:** `{"error": "Ticket not found"}`
+    *   **500 Internal Server Error:** `{"error": "Internal server error message"}`
 
 ### Upload Completion Photo
 *   **Method:** `POST`
@@ -537,6 +632,11 @@
       "assignedTo": { "id": 3, "name": "Ahmed", "email": "ahmeds@gmail.com" }
     }
     ```
+*   **Sample Error Responses:**
+    *   **400 Bad Request:** `{"error": "Invalid ticket id"}` OR `{"error": "photoUrl is required"}`
+    *   **403 Forbidden:** `{"error": "Only workers or admins can perform this action"}` OR `{"error": "Not authorized to upload photo for this ticket"}`
+    *   **404 Not Found:** `{"error": "Ticket not found"}`
+    *   **500 Internal Server Error:** `{"error": "Internal server error message"}`
 
 ---
 
@@ -563,6 +663,8 @@
       ]
     }
     ```
+*   **Sample Error Responses:**
+    *   **500 Internal Server Error:** `{"error": "Internal server error message"}`
 
 ### Get Worker Details
 *   **Method:** `GET`
@@ -582,6 +684,10 @@
       "resolvedTasks": 15
     }
     ```
+*   **Sample Error Responses:**
+    *   **400 Bad Request:** `{"message": "Invalid worker id"}`
+    *   **404 Not Found:** `{"error": "Worker not found"}`
+    *   **500 Internal Server Error:** `{"error": "Internal server error message"}`
 
 ### Update Worker Status
 *   **Method:** `PUT`
@@ -606,6 +712,10 @@
       }
     }
     ```
+*   **Sample Error Responses:**
+    *   **400 Bad Request:** `{"message": "Invalid worker id"}` OR `{"message": "Status is required"}` OR `{"message": "Status must be 'active' or 'inactive'"}`
+    *   **404 Not Found:** `{"error": "Worker not found"}`
+    *   **500 Internal Server Error:** `{"error": "Internal server error message"}`
 
 ### Get Dashboard KPIs
 *   **Method:** `GET`
@@ -622,6 +732,8 @@
       "activeWorkers": 4
     }
     ```
+*   **Sample Error Responses:**
+    *   **500 Internal Server Error:** `{"error": "Internal server error message"}`
 
 ### Get Worker Workloads
 *   **Method:** `GET`
@@ -638,6 +750,8 @@
       }
     ]
     ```
+*   **Sample Error Responses:**
+    *   **500 Internal Server Error:** `{"error": "Internal server error message"}`
 
 ---
 
@@ -662,6 +776,8 @@
       }
     ]
     ```
+*   **Sample Error Responses:**
+    *   **500 Internal Server Error:** `{"error": "Failed to fetch users"}`
 
 ### Update User Status
 *   **Method:** `PUT`
@@ -686,6 +802,10 @@
       }
     }
     ```
+*   **Sample Error Responses:**
+    *   **400 Bad Request:** `{"error": "Invalid user id"}` OR `{"error": "isActive must be boolean"}`
+    *   **404 Not Found:** `{"error": "User not found"}`
+    *   **500 Internal Server Error:** `{"error": "Failed to update user status"}`
 
 ### Update User Role
 *   **Method:** `PUT`
@@ -708,3 +828,7 @@
       }
     }
     ```
+*   **Sample Error Responses:**
+    *   **400 Bad Request:** `{"error": "Invalid user id"}` OR `{"error": "Invalid role provided"}`
+    *   **404 Not Found:** `{"error": "User not found"}`
+    *   **500 Internal Server Error:** `{"error": "Failed to update user role"}`
