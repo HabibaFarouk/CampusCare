@@ -71,19 +71,7 @@ const ProfileScreen = ({ navigation }) => {
 
         <View style={styles.card}>
         <Text style={styles.sectionTitle}>Profile</Text>
-        <Text style={styles.sectionSubtitle}>Update your name, phone and photo.</Text>
-        
-        <View style={styles.photoSection}>
-          <View style={styles.avatarCircle}>
-            <Text style={styles.avatarInitials}>{initials}</Text>
-          </View>
-          <View style={styles.photoInputContainer}>
-            <Text style={styles.label}>Profile picture</Text>
-            <View style={styles.fileInput}>
-              <Text style={styles.fileInputText} numberOfLines={1}>Choose File no file...lected</Text>
-            </View>
-          </View>
-        </View>
+        <Text style={styles.sectionSubtitle}>Update your name and phone.</Text>
 
         <Input
           label="Full name"
@@ -177,46 +165,7 @@ const styles = StyleSheet.create({
     ...type.bodyMuted,
     marginBottom: spacing.xl,
   },
-  photoSection: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: spacing.md,
-  },
-  avatarCircle: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    backgroundColor: colors.surfaceAlt,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: spacing.md,
-  },
-  avatarInitials: {
-    fontSize: 20,
-    fontWeight: '500',
-    color: colors.text,
-  },
-  photoInputContainer: {
-    flex: 1,
-  },
-  label: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: colors.text,
-    marginBottom: 6,
-  },
-  fileInput: {
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-  },
-  fileInputText: {
-    color: colors.text,
-    fontSize: 14,
-  },
+  
   disabledInput: {
     backgroundColor: colors.surfaceAlt,
     color: colors.textMuted,
