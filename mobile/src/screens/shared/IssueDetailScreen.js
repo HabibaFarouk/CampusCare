@@ -6,10 +6,10 @@ import {
   Text,
   ActivityIndicator,
   Alert,
-  SafeAreaView,
   Platform,
   StatusBar,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import StatusBadge from '../../components/common/StatusBadge';
 import CommentList from '../../components/issues/CommentList';
 import PhotoUploader from '../../components/issues/PhotoUploader';

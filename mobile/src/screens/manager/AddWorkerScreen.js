@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { View, StyleSheet, Text, Alert, ScrollView, SafeAreaView, Platform, StatusBar } from 'react-native';
+import { View, StyleSheet, Text, Alert, ScrollView, Platform, StatusBar } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import Button from '../../components/common/Button';
 import Input from '../../components/common/Input';
 import authApi from '../../api/authApi';

@@ -7,24 +7,26 @@ import {
   FlatList,
   ScrollView,
   Alert,
-  SafeAreaView,
   Platform,
   StatusBar,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import IssueCard from '../../components/issues/IssueCard';
 import Dropdown from '../../components/common/Dropdown';
 import Input from '../../components/common/Input';
 import managerApi from '../../api/managerApi';
-import { STATUS_LABELS } from '../../utils/constants';
+import { STATUS_LABELS, VALID_CATEGORIES } from '../../utils/constants';
 
 const FILTERS = ['UNRESOLVED', 'SUBMITTED', 'ASSIGNED', 'IN_PROGRESS', 'FINISHED', 'FINALIZED', 'ALL'];
 const ASSIGNEE_FILTERS = ['ALL', 'UNASSIGNED'];
+const CATEGORY_FILTERS = ['ALL', ...Object.keys(VALID_CATEGORIES)];
 
 const IssueListScreen = ({ navigation }) => {
   const [issues, setIssues] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('UNRESOLVED');
   const [assignedFilter, setAssignedFilter] = useState('ALL');
+  const [categoryFilter, setCategoryFilter] = useState('ALL');
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
   const [workers, setWorkers] = useState([]);
@@ -55,7 +57,7 @@ const IssueListScreen = ({ navigation }) => {
 
   useEffect(() => {
     loadIssues();
-  }, [filter, assignedFilter, dateFrom, dateTo]);
+  }, [filter, assignedFilter, categoryFilter, dateFrom, dateTo]);
 
   const loadWorkers = async () => {
     try {
@@ -77,6 +79,9 @@ const IssueListScreen = ({ navigation }) => {
         params.assignedToId = 'unassigned';
       } else if (assignedFilter.startsWith('worker:')) {
         params.assignedToId = assignedFilter.replace('worker:', '');
+      }
+      if (categoryFilter !== 'ALL') {
+        params.category = categoryFilter;
       }
       if (dateFrom) {
         params.startDate = dateFrom;
@@ -133,6 +138,14 @@ const IssueListScreen = ({ navigation }) => {
             options={assigneeOptions}
             onSelect={setAssignedFilter}
             labelMap={assigneeLabels}
+          />
+          <Dropdown
+            value={categoryFilter}
+            options={CATEGORY_FILTERS}
+            onSelect={setCategoryFilter}
+            labelMap={{
+              ALL: 'All categories',
+            }}
           />
           <View style={styles.dateRow}>
             <Input

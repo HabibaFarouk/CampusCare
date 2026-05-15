@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { View, StyleSheet, Text, ActivityIndicator, Alert, SafeAreaView, Platform, StatusBar } from 'react-native';
+import { View, StyleSheet, Text, ActivityIndicator, Alert, Platform, StatusBar } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import Button from '../../components/common/Button';
 import managerApi from '../../api/managerApi';
 

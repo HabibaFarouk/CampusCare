@@ -6,10 +6,10 @@ import {
   ActivityIndicator,
   Alert,
   Text,
-  SafeAreaView,
   Platform,
   StatusBar,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import WorkerRow from '../../components/manager/WorkerRow';
 import Button from '../../components/common/Button';
 import managerApi from '../../api/managerApi';

@@ -7,10 +7,10 @@ import {
   ActivityIndicator,
   Alert,
   Text,
-  SafeAreaView,
   Platform,
   StatusBar,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import IssueCard from '../../components/issues/IssueCard';
 import Button from '../../components/common/Button';
 import Dropdown from '../../components/common/Dropdown';

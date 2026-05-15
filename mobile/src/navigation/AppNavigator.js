@@ -252,6 +252,15 @@ const ManagerTabs = () => (
       }}
     />
     <Tab.Screen
+      name="IssueListTab"
+      component={IssueListScreen}
+      options={{
+        title: 'Issues',
+        tabBarLabel: 'Issues',
+        tabBarIcon: ({ color, size }) => <Feather name="file-text" size={size} color={color} />,
+      }}
+    />
+    <Tab.Screen
       name="NotificationsTab"
       component={NotificationsScreen}
       options={({ route }) => ({

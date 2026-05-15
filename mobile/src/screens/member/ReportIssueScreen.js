@@ -8,9 +8,9 @@ import {
   Platform,
   Text,
   TouchableOpacity,
-  SafeAreaView,
   StatusBar,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import Input from '../../components/common/Input';
 import Button from '../../components/common/Button';
 import PhotoUploader from '../../components/issues/PhotoUploader';

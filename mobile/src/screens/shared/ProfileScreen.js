@@ -6,10 +6,10 @@ import {
   TouchableOpacity,
   Alert,
   ScrollView,
-  SafeAreaView,
   Platform,
   StatusBar,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import { useAuth } from '../../auth/AuthContext';
 import Input from '../../components/common/Input';

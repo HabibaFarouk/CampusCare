@@ -1313,9 +1313,14 @@ exports.updateUserStatus = async (req, res) => {
 exports.getDashboardKPIs = async (req, res) => {
   try {
     const totalIssues = await prisma.ticket.count();
-    const resolvedIssues = await prisma.ticket.count({
-      where: { status: { in: ['FINALIZED', 'RESOLVED'] } },
-    });
+    let resolvedIssues = 0;
+    try {
+      resolvedIssues = await prisma.ticket.count({
+        where: { status: { in: ['FINALIZED', 'RESOLVED'] } },
+      });
+    } catch (error) {
+      resolvedIssues = await prisma.ticket.count({ where: { status: 'RESOLVED' } });
+    }
     const submittedIssues = await prisma.ticket.count({ where: { status: 'SUBMITTED' } });
     const inProgressIssues = await prisma.ticket.count({ where: { status: 'IN_PROGRESS' } });
     const activeWorkers = await prisma.user.count({ where: { role: 'WORKER', isActive: true } });

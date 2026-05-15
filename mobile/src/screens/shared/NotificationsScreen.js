@@ -7,10 +7,10 @@ import {
   ActivityIndicator,
   TouchableOpacity,
   RefreshControl,
-  SafeAreaView,
   Platform,
   StatusBar,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import notificationApi from '../../api/notificationApi';
 import { colors, spacing, radius, shadow, type } from '../../theme';
