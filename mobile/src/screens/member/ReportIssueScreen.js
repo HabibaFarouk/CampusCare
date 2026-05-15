@@ -43,6 +43,10 @@ const ReportIssueScreen = ({ navigation }) => {
     setPhotoUrls((prev) => Array.from(new Set([...prev, ...urls])));
   };
 
+  const handlePhotoDelete = (urlToDelete) => {
+    setPhotoUrls((prev) => prev.filter((url) => url !== urlToDelete));
+  };
+
   const handleSubmit = async () => {
     try {
       setLoading(true);
@@ -180,6 +184,7 @@ const ReportIssueScreen = ({ navigation }) => {
               <PhotoUploader
                 photos={[]}
                 onUpload={handlePhotoUpload}
+                onDelete={handlePhotoDelete}
                 loading={loading}
                 userId={user?.id}
               />

@@ -71,7 +71,7 @@ const generateTokens = (user) => {
 
 
 exports.registerUser = async (req, res) => {
-  const { name, email, password, role: roleInput } = req.body;
+  const { name, email, password, role: roleInput, phoneNumber } = req.body;
 
   if (!name || !email || !password) {
     return res.status(400).json({ error: 'name, email, and password are required' });
@@ -91,6 +91,7 @@ exports.registerUser = async (req, res) => {
         email,
         password: hashedPassword,
         role,
+        phoneNumber: phoneNumber || null,
       },
     });
 
@@ -104,6 +105,7 @@ exports.registerUser = async (req, res) => {
         name: newUser.name,
         email: newUser.email,
         role: newUser.role,
+        phoneNumber: newUser.phoneNumber,
       },
     });
   } catch (err) {
@@ -949,6 +951,7 @@ exports.getAllUsers = async (req, res) => {
         name: true,
         email: true,
         role: true,
+        phoneNumber: true,
         isActive: true,
         createdAt: true,
       },

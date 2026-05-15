@@ -8,8 +8,10 @@ import {
   Text,
 } from 'react-native';
 import IssueCard from '../../components/issues/IssueCard';
-import Button from '../../components/common/Button';
+import Dropdown from '../../components/common/Dropdown';
+import DashboardHeader from '../../components/common/DashboardHeader';
 import issueApi from '../../api/issueApi';
+import { colors, spacing } from '../../theme';
 
 const AssignedTasksScreen = ({ navigation }) => {
   const [tasks, setTasks] = useState([]);
@@ -54,17 +56,16 @@ const AssignedTasksScreen = ({ navigation }) => {
 
   return (
     <View style={styles.container}>
+      <DashboardHeader />
+      <View style={styles.titleSection}>
+        <Text style={styles.title}>Assigned Tasks</Text>
+      </View>
       <View style={styles.filterContainer}>
-        {['ASSIGNED', 'IN_PROGRESS', 'RESOLVED'].map((status) => (
-          <Button
-            key={status}
-            title={status}
-            onPress={() => setFilter(status)}
-            variant={filter === status ? 'primary' : 'secondary'}
-            size="sm"
-            style={styles.filterButton}
-          />
-        ))}
+        <Dropdown
+          value={filter}
+          options={['ASSIGNED', 'IN_PROGRESS', 'RESOLVED', 'ALL']}
+          onSelect={setFilter}
+        />
       </View>
 
       {tasks.length > 0 ? (
@@ -86,7 +87,17 @@ const AssignedTasksScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f6f1ec',
+    backgroundColor: colors.bg,
+  },
+  titleSection: {
+    padding: spacing.lg,
+    paddingBottom: 0,
+  },
+  title: {
+    fontSize: 28,
+    fontWeight: '700',
+    fontFamily: 'serif',
+    color: colors.text,
   },
   centerContainer: {
     flex: 1,
@@ -94,15 +105,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   filterContainer: {
-    flexDirection: 'row',
     padding: 12,
     backgroundColor: '#fcfaf8',
     borderBottomWidth: 1,
     borderBottomColor: '#e6dac3',
-  },
-  filterButton: {
-    marginHorizontal: 4,
-    flex: 1,
+    zIndex: 10,
   },
   list: {
     padding: 12,

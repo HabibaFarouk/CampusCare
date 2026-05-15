@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import IssueCard from '../../components/issues/IssueCard';
 import Button from '../../components/common/Button';
+import Dropdown from '../../components/common/Dropdown';
 import issueApi from '../../api/issueApi';
 import { useNotification } from '../../utils/NotificationContext';
 
@@ -69,23 +70,13 @@ const MyIssuesScreen = ({ navigation }) => {
 
   return (
     <View style={styles.container}>
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        style={styles.filterContainer}
-        contentContainerStyle={styles.filterContent}
-      >
-        {['ALL', 'SUBMITTED', 'ASSIGNED', 'IN_PROGRESS', 'RESOLVED'].map((status) => (
-          <Button
-            key={status}
-            title={status}
-            onPress={() => setFilter(status)}
-            variant={filter === status ? 'primary' : 'secondary'}
-            size="sm"
-            style={styles.filterButton}
-          />
-        ))}
-      </ScrollView>
+      <View style={styles.filterContainer}>
+        <Dropdown
+          value={filter}
+          options={['ALL', 'SUBMITTED', 'ASSIGNED', 'IN_PROGRESS', 'RESOLVED']}
+          onSelect={setFilter}
+        />
+      </View>
 
       {issues.length > 0 ? (
         <FlatList
@@ -130,13 +121,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#fcfaf8',
     borderBottomWidth: 1,
     borderBottomColor: '#e6dac3',
-  },
-  filterContent: {
-    paddingRight: 8,
-  },
-  filterButton: {
-    marginRight: 8,
-    paddingHorizontal: 20,
+    zIndex: 10,
   },
   list: {
     padding: 12,

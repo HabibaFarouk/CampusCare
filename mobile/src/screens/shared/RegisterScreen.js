@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import Input from '../../components/common/Input';
 import Button from '../../components/common/Button';
+import Dropdown from '../../components/common/Dropdown';
 import { colors, type } from '../../theme';
 import { useAuth } from '../../auth/AuthContext';
 
@@ -22,6 +23,8 @@ const RegisterScreen = ({ navigation }) => {
     email: '',
     password: '',
     confirmPassword: '',
+    role: 'MEMBER',
+    phoneNumber: '',
   });
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
@@ -52,7 +55,8 @@ const RegisterScreen = ({ navigation }) => {
         formData.name.trim(),
         formData.email.trim(),
         formData.password,
-        'MEMBER'
+        formData.role,
+        formData.phoneNumber.trim()
       );
 
       if (!result.success) {
@@ -112,6 +116,15 @@ const RegisterScreen = ({ navigation }) => {
           />
 
           <Input
+            label="Phone Number"
+            placeholder="01xxxxxxxxx"
+            value={formData.phoneNumber}
+            onChangeText={set('phoneNumber')}
+            error={errors.phoneNumber}
+            keyboardType="phone-pad"
+          />
+
+          <Input
             label="Password"
             placeholder="At least 6 characters"
             value={formData.password}
@@ -128,6 +141,15 @@ const RegisterScreen = ({ navigation }) => {
             error={errors.confirmPassword}
             secureTextEntry
           />
+
+          <View style={{ zIndex: 10, marginTop: 4 }}>
+            <Dropdown
+              label="Select Role"
+              value={formData.role}
+              options={['MEMBER', 'WORKER', 'FACILITY_MANAGER']}
+              onSelect={set('role')}
+            />
+          </View>
 
           <Button
             title="Create Account"

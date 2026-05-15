@@ -9,6 +9,8 @@ import {
   Switch,
 } from 'react-native';
 import adminApi from '../../api/adminApi';
+import Dropdown from '../../components/common/Dropdown';
+import DashboardHeader from '../../components/common/DashboardHeader';
 import { colors, type, radius, spacing, shadow } from '../../theme';
 
 const ROLE_LABELS = {
@@ -21,6 +23,9 @@ const ROLE_LABELS = {
 const UserMgmtScreen = ({ navigation }) => {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [filter, setFilter] = useState('ALL');
+
+  const filteredUsers = filter === 'ALL' ? users : users.filter(u => u.role === filter);
 
   useEffect(() => {
     const unsubscribe = navigation.addListener('focus', () => {
@@ -63,15 +68,24 @@ const UserMgmtScreen = ({ navigation }) => {
 
   return (
     <View style={styles.container}>
+      <DashboardHeader />
       <View style={styles.header}>
-        <Text style={styles.pageTitle}>Users</Text>
+        <Text style={styles.pageTitle}>Users Management</Text>
         <Text style={styles.pageSubtitle}>All registered users across the system.</Text>
       </View>
 
+      <View style={styles.filterContainer}>
+        <Dropdown
+          value={filter}
+          options={['ALL', 'MEMBER', 'WORKER', 'FACILITY_MANAGER', 'ADMIN']}
+          onSelect={setFilter}
+        />
+      </View>
+
       <View style={styles.listContainer}>
-        {users.length > 0 ? (
+        {filteredUsers.length > 0 ? (
           <FlatList
-            data={users}
+            data={filteredUsers}
             contentContainerStyle={styles.listContent}
             renderItem={({ item, index }) => (
               <View style={[
@@ -83,6 +97,9 @@ const UserMgmtScreen = ({ navigation }) => {
                 <View style={styles.userInfo}>
                   <Text style={styles.userName} numberOfLines={1}>{item.name}</Text>
                   <Text style={styles.userEmail} numberOfLines={1}>{item.email}</Text>
+                  {item.phoneNumber && (
+                    <Text style={styles.userPhone} numberOfLines={1}>{item.phoneNumber}</Text>
+                  )}
                 </View>
                 
                 <View style={styles.roleBadge}>
@@ -92,12 +109,6 @@ const UserMgmtScreen = ({ navigation }) => {
                 </View>
 
                 <View style={styles.statusSection}>
-                  <Text style={[
-                    styles.statusText,
-                    { color: item.isActive ? colors.success : colors.textMuted }
-                  ]}>
-                    {item.isActive ? 'Active' : 'Inactive'}
-                  </Text>
                   <Switch
                     value={item.isActive}
                     onValueChange={() => handleToggleStatus(item)}
@@ -106,6 +117,12 @@ const UserMgmtScreen = ({ navigation }) => {
                     ios_backgroundColor={colors.surfaceAlt}
                     style={{ transform: [{ scaleX: 0.8 }, { scaleY: 0.8 }] }}
                   />
+                  <Text style={[
+                    styles.statusText,
+                    { color: item.isActive ? colors.success : colors.textMuted }
+                  ]}>
+                    {item.isActive ? 'Active' : 'Inactive'}
+                  </Text>
                 </View>
               </View>
             )}
@@ -134,7 +151,7 @@ const styles = StyleSheet.create({
   },
   header: {
     padding: spacing.lg,
-    paddingTop: spacing.xl,
+    paddingTop: 0,
     paddingBottom: spacing.md,
   },
   pageTitle: {
@@ -146,6 +163,11 @@ const styles = StyleSheet.create({
   },
   pageSubtitle: {
     ...type.bodyMuted,
+  },
+  filterContainer: {
+    paddingHorizontal: spacing.lg,
+    paddingBottom: spacing.md,
+    zIndex: 10,
   },
   listContainer: {
     flex: 1,
@@ -190,6 +212,11 @@ const styles = StyleSheet.create({
   userEmail: {
     ...type.small,
   },
+  userPhone: {
+    ...type.small,
+    color: colors.textMuted,
+    marginTop: 2,
+  },
   roleBadge: {
     flex: 1,
     backgroundColor: colors.primary,
@@ -215,7 +242,7 @@ const styles = StyleSheet.create({
   statusText: {
     fontSize: 12,
     fontWeight: '600',
-    marginRight: 4,
+    marginLeft: 4,
   },
   emptyContainer: {
     flex: 1,

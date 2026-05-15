@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { useAuth } from '../../auth/AuthContext';
+import DashboardHeader from '../../components/common/DashboardHeader';
 import issueApi from '../../api/issueApi';
 import { colors, spacing, radius, type, shadow } from '../../theme';
 import { useNotification } from '../../utils/NotificationContext';
@@ -75,28 +76,7 @@ const MemberDashboardScreen = ({ navigation }) => {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <View style={styles.header}>
-        <View style={styles.logoContainer}>
-          <Image 
-            source={require('../../../assets/Logo.png')} 
-            style={styles.logo} 
-            resizeMode="contain" 
-          />
-          <View>
-            <Text style={styles.headerTitle}>CampusCare</Text>
-            <Text style={styles.headerSubtitle}>German International University</Text>
-          </View>
-        </View>
-        <View style={styles.headerActions}>
-          <TouchableOpacity onPress={logout} style={styles.signOutBtn}>
-            <Feather name="log-out" size={16} color={colors.text} />
-            <Text style={styles.signOutText}>Sign out</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.menuBtn}>
-            <Feather name="menu" size={24} color={colors.text} />
-          </TouchableOpacity>
-        </View>
-      </View>
+      <DashboardHeader />
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         <View style={styles.greetingSection}>
@@ -161,48 +141,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.bg,
   },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: spacing.lg,
-    paddingTop: spacing.sm,
-    paddingBottom: spacing.md,
-  },
-  logoContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  logo: {
-    width: 40,
-    height: 40,
-    marginRight: spacing.sm,
-  },
-  headerTitle: {
-    ...type.heading,
-    fontSize: 16,
-    letterSpacing: -0.5,
-  },
-  headerSubtitle: {
-    ...type.tiny,
-  },
-  headerActions: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  signOutBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginRight: spacing.md,
-  },
-  signOutText: {
-    ...type.small,
-    fontWeight: '600',
-    marginLeft: 4,
-  },
-  menuBtn: {
-    padding: 4,
-  },
+
   scrollContent: {
     padding: spacing.lg,
     paddingBottom: spacing.xxl,
