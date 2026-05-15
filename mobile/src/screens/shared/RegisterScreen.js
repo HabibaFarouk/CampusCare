@@ -9,9 +9,12 @@ import {
   Text,
   TouchableOpacity,
   StatusBar,
+  Image,
 } from 'react-native';
 import Input from '../../components/common/Input';
 import Button from '../../components/common/Button';
+import Dropdown from '../../components/common/Dropdown';
+import { colors, type } from '../../theme';
 import { useAuth } from '../../auth/AuthContext';
 
 const RegisterScreen = ({ navigation }) => {
@@ -20,6 +23,8 @@ const RegisterScreen = ({ navigation }) => {
     email: '',
     password: '',
     confirmPassword: '',
+    role: 'MEMBER',
+    phoneNumber: '',
   });
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
@@ -50,7 +55,8 @@ const RegisterScreen = ({ navigation }) => {
         formData.name.trim(),
         formData.email.trim(),
         formData.password,
-        'MEMBER'
+        formData.role,
+        formData.phoneNumber.trim()
       );
 
       if (!result.success) {
@@ -71,15 +77,17 @@ const RegisterScreen = ({ navigation }) => {
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       style={styles.container}
     >
-      <StatusBar barStyle="light-content" backgroundColor="#1565C0" />
+      <StatusBar barStyle="dark-content" backgroundColor={colors.bg} />
       <ScrollView contentContainerStyle={styles.scrollView} keyboardShouldPersistTaps="handled">
         {/* Hero header */}
         <View style={styles.hero}>
-          <View style={styles.logoCircle}>
-            <Text style={styles.logoIcon}>🏫</Text>
-          </View>
+          <Image 
+            source={require('../../../assets/Logo.png')} 
+            style={styles.logo} 
+            resizeMode="contain" 
+          />
           <Text style={styles.appName}>CampusCare</Text>
-          <Text style={styles.tagline}>Join your campus community</Text>
+          <Text style={styles.tagline}>German International University</Text>
         </View>
 
         {/* Form card */}
@@ -108,6 +116,15 @@ const RegisterScreen = ({ navigation }) => {
           />
 
           <Input
+            label="Phone Number"
+            placeholder="01xxxxxxxxx"
+            value={formData.phoneNumber}
+            onChangeText={set('phoneNumber')}
+            error={errors.phoneNumber}
+            keyboardType="phone-pad"
+          />
+
+          <Input
             label="Password"
             placeholder="At least 6 characters"
             value={formData.password}
@@ -125,10 +142,20 @@ const RegisterScreen = ({ navigation }) => {
             secureTextEntry
           />
 
+          <View style={{ zIndex: 10, marginTop: 4 }}>
+            <Dropdown
+              label="Select Role"
+              value={formData.role}
+              options={['MEMBER', 'WORKER', 'FACILITY_MANAGER']}
+              onSelect={set('role')}
+            />
+          </View>
+
           <Button
             title="Create Account"
             onPress={handleRegister}
             loading={loading}
+            variant="action"
             style={styles.createButton}
           />
 
@@ -150,7 +177,7 @@ const RegisterScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#1565C0',
+    backgroundColor: colors.bg,
   },
   scrollView: {
     flexGrow: 1,
@@ -161,32 +188,22 @@ const styles = StyleSheet.create({
     paddingBottom: 32,
     paddingHorizontal: 20,
   },
-  logoCircle: {
-    width: 70,
-    height: 70,
-    borderRadius: 35,
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 14,
-  },
-  logoIcon: {
-    fontSize: 34,
+  logo: {
+    width: 80,
+    height: 80,
+    marginBottom: 16,
   },
   appName: {
-    fontSize: 30,
-    fontWeight: '800',
-    color: '#ffffff',
-    letterSpacing: 0.5,
+    ...type.title,
+    fontSize: 28,
   },
   tagline: {
-    fontSize: 13,
-    color: 'rgba(255,255,255,0.75)',
-    marginTop: 6,
+    ...type.small,
+    marginTop: 4,
   },
   card: {
     flex: 1,
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.surface,
     borderTopLeftRadius: 28,
     borderTopRightRadius: 28,
     paddingHorizontal: 24,
@@ -194,14 +211,14 @@ const styles = StyleSheet.create({
     paddingBottom: 40,
   },
   cardTitle: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: '#1a1a2e',
+    fontSize: 32,
+    fontFamily: 'serif',
+    fontWeight: 'bold',
+    color: colors.text,
     marginBottom: 4,
   },
   cardSubtitle: {
-    fontSize: 14,
-    color: '#8a8a9a',
+    ...type.bodyMuted,
     marginBottom: 24,
   },
   createButton: {
@@ -214,10 +231,10 @@ const styles = StyleSheet.create({
   },
   loginText: {
     fontSize: 14,
-    color: '#6b6b80',
+    color: colors.textMuted,
   },
   loginLink: {
-    color: '#1565C0',
+    color: colors.action,
     fontWeight: '700',
   },
 });

@@ -2,6 +2,8 @@ export const VALID_STATUSES = {
   SUBMITTED: 'SUBMITTED',
   ASSIGNED: 'ASSIGNED',
   IN_PROGRESS: 'IN_PROGRESS',
+  FINISHED: 'FINISHED',
+  FINALIZED: 'FINALIZED',
   RESOLVED: 'RESOLVED',
   CANCELLED: 'CANCELLED',
 };
@@ -27,8 +29,20 @@ export const STATUS_COLORS = {
   SUBMITTED: '#FFA500',
   ASSIGNED: '#4169E1',
   IN_PROGRESS: '#1E90FF',
+  FINISHED: '#2E8B57',
+  FINALIZED: '#228B22',
   RESOLVED: '#32CD32',
   CANCELLED: '#DC143C',
+};
+
+export const STATUS_LABELS = {
+  SUBMITTED: 'Issued',
+  ASSIGNED: 'Assigned',
+  IN_PROGRESS: 'InProgress',
+  FINISHED: 'Finished',
+  FINALIZED: 'Finalized',
+  RESOLVED: 'Finalized',
+  CANCELLED: 'Cancelled',
 };
 
 export const CATEGORY_ICONS = {

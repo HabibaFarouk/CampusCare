@@ -50,24 +50,24 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     marginBottom: 6,
-    color: '#333',
+    color: '#1d1d1b', // theme text
   },
   input: {
     borderWidth: 1,
-    borderColor: '#ccc',
+    borderColor: '#e6dac3', // theme border
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 10,
     fontSize: 16,
-    color: '#000',
-    backgroundColor: '#f9f9f9',
+    color: '#1d1d1b', // theme text
+    backgroundColor: '#fcfaf8', // theme surface
   },
   inputError: {
-    borderColor: '#FF3B30',
-    backgroundColor: '#FFE5E5',
+    borderColor: '#ef4444', // theme danger
+    backgroundColor: '#fee2e2', // theme dangerSoft
   },
   errorText: {
-    color: '#FF3B30',
+    color: '#ef4444',
     fontSize: 12,
     marginTop: 4,
   },

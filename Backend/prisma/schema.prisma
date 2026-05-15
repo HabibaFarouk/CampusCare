@@ -13,6 +13,7 @@ model User {
   email     String   @unique
   password  String
   role      Role
+  phoneNumber String?
   isActive  Boolean  @default(true)
   notifications Notification[]
   auditLogs     AuditLog[]
@@ -85,6 +86,8 @@ enum Status {
   SUBMITTED
   ASSIGNED
   IN_PROGRESS
+  FINISHED
+  FINALIZED
   RESOLVED
   CANCELLED
 }

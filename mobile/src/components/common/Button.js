@@ -53,16 +53,19 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   primary: {
-    backgroundColor: '#007AFF',
+    backgroundColor: '#e6dac3', // theme primary
+  },
+  action: {
+    backgroundColor: '#9b483e', // theme action
   },
   secondary: {
-    backgroundColor: '#E8E8E8',
+    backgroundColor: '#f0ece7', // theme surfaceAlt
   },
   danger: {
-    backgroundColor: '#FF3B30',
+    backgroundColor: '#ef4444',
   },
   success: {
-    backgroundColor: '#34C759',
+    backgroundColor: '#10b981',
   },
   disabled: {
     opacity: 0.5,
@@ -84,10 +87,13 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   text_primary: {
-    color: '#fff',
+    color: '#3a3532', // theme primaryText
+  },
+  text_action: {
+    color: '#ffffff', // theme actionText
   },
   text_secondary: {
-    color: '#000',
+    color: '#1d1d1b', // theme text
   },
   text_danger: {
     color: '#fff',

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { View, StyleSheet, Text, Alert, ScrollView } from 'react-native';
+import { View, StyleSheet, Text, Alert, ScrollView, Platform, StatusBar } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import Button from '../../components/common/Button';
 import Input from '../../components/common/Input';
 import authApi from '../../api/authApi';
@@ -36,9 +37,10 @@ const AddWorkerScreen = ({ navigation }) => {
   };
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
-      <Text style={styles.title}>Add Worker</Text>
-      <Text style={styles.subtitle}>Create a new worker account.</Text>
+    <SafeAreaView style={styles.safeArea}>
+      <ScrollView contentContainerStyle={styles.container}>
+        <Text style={styles.title}>Add Worker</Text>
+        <Text style={styles.subtitle}>Create a new worker account.</Text>
 
       <Input
         label="Full Name"
@@ -63,22 +65,28 @@ const AddWorkerScreen = ({ navigation }) => {
         secureTextEntry
       />
 
-      <Button title="Create Worker" onPress={handleSubmit} loading={loading} />
-      <Button
-        title="Cancel"
-        onPress={() => navigation.goBack()}
-        variant="secondary"
-        style={styles.cancelButton}
-      />
-    </ScrollView>
+        <Button title="Create Worker" onPress={handleSubmit} loading={loading} />
+        <Button
+          title="Cancel"
+          onPress={() => navigation.goBack()}
+          variant="secondary"
+          style={styles.cancelButton}
+        />
+      </ScrollView>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: '#f6f1ec',
+    paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 0) : 0,
+  },
   container: {
     flexGrow: 1,
     padding: 24,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#f6f1ec',
   },
   title: {
     fontSize: 22,

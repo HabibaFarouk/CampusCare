@@ -6,34 +6,33 @@ import {
   TouchableOpacity,
   Alert,
   ScrollView,
+  Platform,
+  StatusBar,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { Feather } from '@expo/vector-icons';
 import { useAuth } from '../../auth/AuthContext';
 import Input from '../../components/common/Input';
 import Button from '../../components/common/Button';
 import userApi from '../../api/userApi';
+import { colors, type, radius, shadow, spacing } from '../../theme';
 
 const ROLE_LABELS = {
   MEMBER: 'Community Member',
   WORKER: 'Maintenance Worker',
   FACILITY_MANAGER: 'Facility Manager',
-  ADMIN: 'Administrator',
-};
-
-const ROLE_COLORS = {
-  MEMBER: '#1565C0',
-  WORKER: '#E65100',
-  FACILITY_MANAGER: '#2E7D32',
-  ADMIN: '#6A1B9A',
+  ADMIN: 'System Admin',
 };
 
 const ProfileScreen = ({ navigation }) => {
   const { user, logout, updateUser } = useAuth();
   const [name, setName] = useState(user?.name || '');
   const [email, setEmail] = useState(user?.email || '');
+  // Adding dummy state for phone, as it's in the design but not in current user schema
+  const [phone, setPhone] = useState('+20 100 000 0000'); 
   const [saving, setSaving] = useState(false);
 
   const roleLabel = ROLE_LABELS[user?.role] || user?.role || 'User';
-  const roleColor = ROLE_COLORS[user?.role] || '#1565C0';
   const initials = user?.name
     ? user.name.split(' ').map((w) => w[0]).slice(0, 2).join('').toUpperCase()
     : 'U';
@@ -62,287 +61,139 @@ const ProfileScreen = ({ navigation }) => {
     }
   };
 
-  const menuItems = [
-    ...(user?.role === 'MEMBER'
-      ? [
-          {
-            icon: '📋',
-            title: 'My Issues',
-            subtitle: 'View all your reported issues',
-            onPress: () => navigation.navigate('MyIssuesTab'),
-          },
-        ]
-      : []),
-    ...(user?.role === 'WORKER'
-      ? [
-          {
-            icon: '🔧',
-            title: 'Assigned Tasks',
-            subtitle: 'View tasks assigned to you',
-            onPress: () => navigation.navigate('AssignedTasksTab'),
-          },
-        ]
-      : []),
-    ...(user?.role === 'FACILITY_MANAGER'
-      ? [
-          {
-            icon: '📊',
-            title: 'Dashboard',
-            subtitle: 'View KPIs and statistics',
-            onPress: () => navigation.navigate('FMDashboardTab'),
-          },
-          {
-            icon: '👷',
-            title: 'Worker Management',
-            subtitle: 'Manage maintenance workers',
-            onPress: () => navigation.navigate('WorkerMgmtTab'),
-          },
-        ]
-      : []),
-    ...(user?.role === 'ADMIN'
-      ? [
-          {
-            icon: '👥',
-            title: 'User Management',
-            subtitle: 'Manage all users and roles',
-            onPress: () => navigation.navigate('UserMgmtTab'),
-          },
-        ]
-      : []),
-  ];
-
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
-      {/* Profile header */}
-      <View style={[styles.header, { backgroundColor: roleColor }]}>
-        <View style={styles.avatarCircle}>
-          <Text style={styles.avatarInitials}>{initials}</Text>
+    <SafeAreaView style={styles.safeArea}>
+      <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
+        <View style={styles.header}>
+        <Text style={styles.pageTitle}>My Account</Text>
+        <Text style={styles.pageSubtitle}>Manage your personal details and session.</Text>
         </View>
-        <Text style={styles.nameText}>{user?.name || 'User'}</Text>
-        <Text style={styles.emailText}>{user?.email}</Text>
-        <View style={styles.roleBadge}>
-          <Text style={styles.roleBadgeText}>{roleLabel}</Text>
-        </View>
-      </View>
 
-      {/* Quick actions */}
-      {menuItems.length > 0 && (
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Quick Actions</Text>
-          <View style={styles.menuCard}>
-            {menuItems.map((item, index) => (
-              <TouchableOpacity
-                key={index}
-                style={[
-                  styles.menuItem,
-                  index < menuItems.length - 1 && styles.menuItemBorder,
-                ]}
-                onPress={item.onPress}
-                activeOpacity={0.7}
-              >
-                <View style={styles.menuIconBox}>
-                  <Text style={styles.menuIcon}>{item.icon}</Text>
-                </View>
-                <View style={styles.menuItemContent}>
-                  <Text style={styles.menuItemTitle}>{item.title}</Text>
-                  <Text style={styles.menuItemSubtitle}>{item.subtitle}</Text>
-                </View>
-                <Text style={styles.menuArrow}>›</Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        </View>
-      )}
+        <View style={styles.card}>
+        <Text style={styles.sectionTitle}>Profile</Text>
+        <Text style={styles.sectionSubtitle}>Update your name and phone.</Text>
 
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Profile Details</Text>
-        <View style={styles.formCard}>
-          <Input
-            label="Full Name"
-            value={name}
-            onChangeText={setName}
-            placeholder="Your name"
+        <Input
+          label="Full name"
+          value={name}
+          onChangeText={setName}
+          placeholder="Your name"
+        />
+        
+        <Input
+          label="Email"
+          value={email}
+          onChangeText={setEmail}
+          placeholder="you@example.com"
+          keyboardType="email-address"
+          autoCapitalize="none"
+        />
+
+        <Input
+          label="Phone number"
+          value={phone}
+          onChangeText={setPhone}
+          placeholder="+20 100 000 0000"
+        />
+
+        <Input
+          label="Role"
+          value={roleLabel}
+          editable={false}
+          style={styles.disabledInput}
+        />
+
+        <View style={styles.buttonRow}>
+          <Button 
+            title="Save changes" 
+            onPress={handleSave} 
+            loading={saving} 
+            variant="action" 
+            style={styles.saveButton}
           />
-          <Input
-            label="Email"
-            value={email}
-            onChangeText={setEmail}
-            placeholder="you@example.com"
-            keyboardType="email-address"
-            autoCapitalize="none"
-          />
-          <Button title="Save Changes" onPress={handleSave} loading={saving} />
+          <TouchableOpacity style={styles.signOutBtn} onPress={handleSignOut}>
+            <Feather name="log-out" size={16} color={colors.text} />
+            <Text style={styles.signOutText}>Sign out</Text>
+          </TouchableOpacity>
         </View>
-      </View>
-
-      {/* Sign out */}
-      <View style={styles.section}>
-        <TouchableOpacity style={styles.signOutButton} onPress={handleSignOut} activeOpacity={0.8}>
-          <Text style={styles.signOutIcon}>🚪</Text>
-          <Text style={styles.signOutText}>Sign Out</Text>
-        </TouchableOpacity>
-      </View>
-
-      <Text style={styles.version}>CampusCare v1.0</Text>
-    </ScrollView>
+        </View>
+      </ScrollView>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: colors.bg,
+    paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 0) : 0,
+  },
   container: {
     flex: 1,
-    backgroundColor: '#f4f6fb',
+    backgroundColor: colors.bg,
   },
   contentContainer: {
-    paddingBottom: 32,
+    padding: spacing.xl,
+    paddingTop: spacing.lg,
   },
   header: {
-    paddingTop: 40,
-    paddingBottom: 36,
-    paddingHorizontal: 24,
-    alignItems: 'center',
+    marginBottom: spacing.xl,
   },
-  avatarCircle: {
-    width: 84,
-    height: 84,
-    borderRadius: 42,
-    backgroundColor: 'rgba(255,255,255,0.25)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 14,
-    borderWidth: 2,
-    borderColor: 'rgba(255,255,255,0.4)',
-  },
-  avatarInitials: {
+  pageTitle: {
     fontSize: 32,
-    fontWeight: '700',
-    color: '#ffffff',
+    fontFamily: 'serif',
+    fontWeight: 'bold',
+    color: colors.text,
+    marginBottom: spacing.xs,
   },
-  nameText: {
-    fontSize: 22,
-    fontWeight: '700',
-    color: '#ffffff',
-    marginBottom: 4,
+  pageSubtitle: {
+    ...type.bodyMuted,
   },
-  emailText: {
-    fontSize: 13,
-    color: 'rgba(255,255,255,0.8)',
-    marginBottom: 12,
-  },
-  roleBadge: {
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    paddingHorizontal: 14,
-    paddingVertical: 5,
-    borderRadius: 20,
+  card: {
+    backgroundColor: colors.surface,
+    borderRadius: radius.lg,
+    padding: spacing.lg,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.35)',
-  },
-  roleBadgeText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#ffffff',
-    letterSpacing: 0.3,
-  },
-  section: {
-    marginTop: 20,
-    marginHorizontal: 16,
+    borderColor: colors.border,
+    ...shadow.card,
   },
   sectionTitle: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#8a8a9a',
-    letterSpacing: 0.5,
-    textTransform: 'uppercase',
-    marginBottom: 8,
-    marginLeft: 4,
+    ...type.heading,
+    marginBottom: spacing.xs,
   },
-  menuCard: {
-    backgroundColor: '#ffffff',
-    borderRadius: 14,
-    overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.06,
-    shadowRadius: 4,
-    elevation: 2,
+  sectionSubtitle: {
+    ...type.bodyMuted,
+    marginBottom: spacing.xl,
   },
-  menuItem: {
+  
+  disabledInput: {
+    backgroundColor: colors.surfaceAlt,
+    color: colors.textMuted,
+  },
+  buttonRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 14,
+    marginTop: spacing.md,
   },
-  menuItemBorder: {
-    borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f5',
-  },
-  menuIconBox: {
-    width: 38,
-    height: 38,
-    borderRadius: 10,
-    backgroundColor: '#f0f4ff',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 12,
-  },
-  menuIcon: {
-    fontSize: 20,
-  },
-  menuItemContent: {
-    flex: 1,
-  },
-  menuItemTitle: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: '#1a1a2e',
-    marginBottom: 2,
-  },
-  menuItemSubtitle: {
-    fontSize: 12,
-    color: '#9a9aaa',
-  },
-  menuArrow: {
-    fontSize: 22,
-    color: '#c8c8d8',
-    fontWeight: '300',
-  },
-  formCard: {
-    backgroundColor: '#ffffff',
-    borderRadius: 14,
-    padding: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.06,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  signOutButton: {
-    backgroundColor: '#ffffff',
-    borderRadius: 14,
+  saveButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.06,
-    shadowRadius: 4,
-    elevation: 2,
+    marginRight: spacing.md,
+    paddingVertical: 12,
+    paddingHorizontal: 20,
   },
-  signOutIcon: {
-    fontSize: 20,
-    marginRight: 8,
+  signOutBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    backgroundColor: colors.surfaceAlt,
+    borderRadius: 8,
   },
   signOutText: {
-    fontSize: 16,
+    ...type.body,
     fontWeight: '600',
-    color: '#D32F2F',
-  },
-  version: {
-    textAlign: 'center',
-    fontSize: 12,
-    color: '#b0b0c0',
-    marginTop: 28,
+    marginLeft: spacing.sm,
   },
 });
 

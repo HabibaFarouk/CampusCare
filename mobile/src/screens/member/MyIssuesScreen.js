@@ -7,11 +7,16 @@ import {
   ActivityIndicator,
   Alert,
   Text,
+  Platform,
+  StatusBar,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import IssueCard from '../../components/issues/IssueCard';
 import Button from '../../components/common/Button';
+import Dropdown from '../../components/common/Dropdown';
 import issueApi from '../../api/issueApi';
 import { useNotification } from '../../utils/NotificationContext';
+import { STATUS_LABELS } from '../../utils/constants';
 
 const MyIssuesScreen = ({ navigation }) => {
   const [issues, setIssues] = useState([]);
@@ -68,24 +73,19 @@ const MyIssuesScreen = ({ navigation }) => {
   }
 
   return (
-    <View style={styles.container}>
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        style={styles.filterContainer}
-        contentContainerStyle={styles.filterContent}
-      >
-        {['ALL', 'SUBMITTED', 'ASSIGNED', 'IN_PROGRESS', 'RESOLVED'].map((status) => (
-          <Button
-            key={status}
-            title={status}
-            onPress={() => setFilter(status)}
-            variant={filter === status ? 'primary' : 'secondary'}
-            size="sm"
-            style={styles.filterButton}
-          />
-        ))}
-      </ScrollView>
+    <SafeAreaView style={styles.safeArea}>
+      <View style={styles.container}>
+      <View style={styles.filterContainer}>
+        <Dropdown
+          value={filter}
+          options={['ALL', 'SUBMITTED', 'ASSIGNED', 'IN_PROGRESS', 'FINISHED', 'FINALIZED']}
+          onSelect={setFilter}
+          labelMap={{
+            ...STATUS_LABELS,
+            ALL: 'All',
+          }}
+        />
+      </View>
 
       {issues.length > 0 ? (
         <FlatList
@@ -111,14 +111,20 @@ const MyIssuesScreen = ({ navigation }) => {
           size="lg"
         />
       </View>
-    </View>
+      </View>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: '#f6f1ec',
+    paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 0) : 0,
+  },
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#f6f1ec',
   },
   centerContainer: {
     flex: 1,
@@ -127,16 +133,10 @@ const styles = StyleSheet.create({
   },
   filterContainer: {
     padding: 12,
-    backgroundColor: '#fff',
+    backgroundColor: '#fcfaf8',
     borderBottomWidth: 1,
-    borderBottomColor: '#E8E8E8',
-  },
-  filterContent: {
-    paddingRight: 8,
-  },
-  filterButton: {
-    marginRight: 8,
-    minWidth: 110,
+    borderBottomColor: '#e6dac3',
+    zIndex: 10,
   },
   list: {
     padding: 12,
@@ -149,14 +149,14 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 16,
-    color: '#666',
+    color: '#68645e',
     marginBottom: 20,
   },
   fab: {
     padding: 16,
-    backgroundColor: '#fff',
+    backgroundColor: '#fcfaf8',
     borderTopWidth: 1,
-    borderTopColor: '#E8E8E8',
+    borderTopColor: '#e6dac3',
   },
 });
 

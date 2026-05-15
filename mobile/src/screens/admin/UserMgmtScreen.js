@@ -6,18 +6,26 @@ import {
   ActivityIndicator,
   Alert,
   Text,
-  ScrollView,
+  Switch,
 } from 'react-native';
-import Button from '../../components/common/Button';
 import adminApi from '../../api/adminApi';
+import Dropdown from '../../components/common/Dropdown';
+import DashboardHeader from '../../components/common/DashboardHeader';
+import { colors, type, radius, spacing, shadow } from '../../theme';
 
-const ROLE_FILTERS = ['ALL', 'MEMBER', 'WORKER', 'FACILITY_MANAGER', 'ADMIN'];
-const ROLE_OPTIONS = ['MEMBER', 'WORKER', 'FACILITY_MANAGER', 'ADMIN'];
+const ROLE_LABELS = {
+  MEMBER: 'Community\nMember',
+  WORKER: 'Worker',
+  FACILITY_MANAGER: 'Facility\nManager',
+  ADMIN: 'System\nAdmin',
+};
 
 const UserMgmtScreen = ({ navigation }) => {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('ALL');
+
+  const filteredUsers = filter === 'ALL' ? users : users.filter(u => u.role === filter);
 
   useEffect(() => {
     const unsubscribe = navigation.addListener('focus', () => {
@@ -32,7 +40,8 @@ const UserMgmtScreen = ({ navigation }) => {
       const data = await adminApi.getUsers();
       setUsers(Array.isArray(data) ? data : []);
     } catch (error) {
-      Alert.alert('Error', 'Failed to load users');
+      const message = error.response?.data?.error || error.message || 'Failed to load users';
+      Alert.alert('Error', message);
     } finally {
       setLoading(false);
     }
@@ -40,110 +49,92 @@ const UserMgmtScreen = ({ navigation }) => {
 
   const handleToggleStatus = async (user) => {
     try {
+      // Optimistic update
+      setUsers(users.map(u => u.id === user.id ? { ...u, isActive: !user.isActive } : u));
       await adminApi.updateUserStatus(user.id, !user.isActive);
-      loadUsers();
     } catch (error) {
+      // Revert on error
+      setUsers(users.map(u => u.id === user.id ? { ...u, isActive: user.isActive } : u));
       Alert.alert('Error', 'Failed to update user status');
     }
   };
 
-  const handleRoleChange = async (userId, role) => {
-    try {
-      await adminApi.updateUserRole(userId, role);
-      loadUsers();
-    } catch (error) {
-      Alert.alert('Error', 'Failed to update user role');
-    }
-  };
-
-  const visibleUsers =
-    filter === 'ALL' ? users : users.filter((user) => user.role === filter);
-
   if (loading) {
     return (
       <View style={styles.centerContainer}>
-        <ActivityIndicator size="large" color="#007AFF" />
+        <ActivityIndicator size="large" color={colors.primaryDark} />
       </View>
     );
   }
 
   return (
     <View style={styles.container}>
+      <DashboardHeader />
       <View style={styles.header}>
-        <Text style={styles.title}>User Management</Text>
+        <Text style={styles.pageTitle}>Users Management</Text>
+        <Text style={styles.pageSubtitle}>All registered users across the system.</Text>
       </View>
 
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        style={styles.filterContainer}
-        contentContainerStyle={styles.filterContent}
-      >
-        {ROLE_FILTERS.map((role) => (
-          <Button
-            key={role}
-            title={role}
-            onPress={() => setFilter(role)}
-            variant={filter === role ? 'primary' : 'secondary'}
-            size="sm"
-            style={styles.filterButton}
-          />
-        ))}
-      </ScrollView>
+      <View style={styles.filterContainer}>
+        <Dropdown
+          value={filter}
+          options={['ALL', 'MEMBER', 'WORKER', 'FACILITY_MANAGER', 'ADMIN']}
+          onSelect={setFilter}
+        />
+      </View>
 
-      {visibleUsers.length > 0 ? (
-        <FlatList
-          data={visibleUsers}
-          renderItem={({ item }) => (
-            <View style={styles.userItem}>
-              <View style={styles.userHeader}>
+      <View style={styles.listContainer}>
+        {filteredUsers.length > 0 ? (
+          <FlatList
+            data={filteredUsers}
+            contentContainerStyle={styles.listContent}
+            renderItem={({ item, index }) => (
+              <View style={[
+                styles.userItem,
+                index === 0 && styles.firstItem,
+                index === users.length - 1 && styles.lastItem,
+                index !== users.length - 1 && styles.middleItem
+              ]}>
                 <View style={styles.userInfo}>
-                  <Text style={styles.userName}>{item.name}</Text>
-                  <Text style={styles.userEmail}>{item.email}</Text>
+                  <Text style={styles.userName} numberOfLines={1}>{item.name}</Text>
+                  <Text style={styles.userEmail} numberOfLines={1}>{item.email}</Text>
+                  {item.phoneNumber && (
+                    <Text style={styles.userPhone} numberOfLines={1}>{item.phoneNumber}</Text>
+                  )}
                 </View>
-                <View style={styles.badgeGroup}>
-                  <Text style={styles.roleBadge}>{item.role}</Text>
-                  <Text
-                    style={[
-                      styles.statusBadge,
-                      { backgroundColor: item.isActive ? '#34C759' : '#FF9500' },
-                    ]}
-                  >
-                    {item.isActive ? 'ACTIVE' : 'INACTIVE'}
+                
+                <View style={styles.roleBadge}>
+                  <Text style={styles.roleBadgeText} textAlign="center">
+                    {ROLE_LABELS[item.role] || item.role}
+                  </Text>
+                </View>
+
+                <View style={styles.statusSection}>
+                  <Switch
+                    value={item.isActive}
+                    onValueChange={() => handleToggleStatus(item)}
+                    trackColor={{ false: colors.surfaceAlt, true: colors.action }}
+                    thumbColor={colors.surface}
+                    ios_backgroundColor={colors.surfaceAlt}
+                    style={{ transform: [{ scaleX: 0.8 }, { scaleY: 0.8 }] }}
+                  />
+                  <Text style={[
+                    styles.statusText,
+                    { color: item.isActive ? colors.success : colors.textMuted }
+                  ]}>
+                    {item.isActive ? 'Active' : 'Inactive'}
                   </Text>
                 </View>
               </View>
-
-              <View style={styles.actionsRow}>
-                <Button
-                  title={item.isActive ? 'Deactivate' : 'Activate'}
-                  onPress={() => handleToggleStatus(item)}
-                  variant={item.isActive ? 'secondary' : 'primary'}
-                  size="sm"
-                />
-              </View>
-
-              <View style={styles.roleRow}>
-                {ROLE_OPTIONS.map((role) => (
-                  <Button
-                    key={`${item.id}-${role}`}
-                    title={role}
-                    onPress={() => handleRoleChange(item.id, role)}
-                    variant={item.role === role ? 'primary' : 'secondary'}
-                    size="sm"
-                    style={styles.roleButton}
-                  />
-                ))}
-              </View>
-            </View>
-          )}
-          keyExtractor={(item) => item.id.toString()}
-        />
-      ) : (
-        <View style={styles.emptyContainer}>
-          <Text style={styles.emptyText}>No users found</Text>
-        </View>
-      )}
+            )}
+            keyExtractor={(item) => item.id.toString()}
+          />
+        ) : (
+          <View style={styles.emptyContainer}>
+            <Text style={styles.emptyText}>No users found</Text>
+          </View>
+        )}
+      </View>
     </View>
   );
 };
@@ -151,92 +142,108 @@ const UserMgmtScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: colors.bg,
   },
   centerContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: colors.bg,
   },
   header: {
-    backgroundColor: '#fff',
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#E8E8E8',
+    padding: spacing.lg,
+    paddingTop: 0,
+    paddingBottom: spacing.md,
   },
-  title: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#000',
+  pageTitle: {
+    fontSize: 32,
+    fontFamily: 'serif',
+    fontWeight: 'bold',
+    color: colors.text,
+    marginBottom: spacing.xs,
+  },
+  pageSubtitle: {
+    ...type.bodyMuted,
   },
   filterContainer: {
-    padding: 12,
-    backgroundColor: '#fff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#E8E8E8',
+    paddingHorizontal: spacing.lg,
+    paddingBottom: spacing.md,
+    zIndex: 10,
   },
-  filterContent: {
-    paddingRight: 8,
+  listContainer: {
+    flex: 1,
+    paddingHorizontal: spacing.lg,
   },
-  filterButton: {
-    marginRight: 8,
-    minWidth: 130,
+  listContent: {
+    backgroundColor: colors.surface,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
+    ...shadow.card,
+    paddingVertical: 8,
   },
   userItem: {
-    backgroundColor: '#fff',
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#E8E8E8',
-  },
-  userHeader: {
     flexDirection: 'row',
+    alignItems: 'center',
     justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+  },
+  middleItem: {
+    borderBottomWidth: 1,
+    borderBottomColor: colors.surfaceAlt,
+  },
+  firstItem: {
+    borderTopLeftRadius: radius.lg,
+    borderTopRightRadius: radius.lg,
+  },
+  lastItem: {
+    borderBottomLeftRadius: radius.lg,
+    borderBottomRightRadius: radius.lg,
   },
   userInfo: {
-    flex: 1,
+    flex: 1.5,
+    paddingRight: 8,
   },
   userName: {
+    ...type.heading,
     fontSize: 16,
-    fontWeight: '700',
-    color: '#000',
-    marginBottom: 4,
+    marginBottom: 2,
   },
   userEmail: {
-    fontSize: 12,
-    color: '#666',
+    ...type.small,
   },
-  badgeGroup: {
-    alignItems: 'flex-end',
-    marginLeft: 12,
+  userPhone: {
+    ...type.small,
+    color: colors.textMuted,
+    marginTop: 2,
   },
   roleBadge: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: '#007AFF',
-    marginBottom: 6,
-  },
-  statusBadge: {
-    color: '#fff',
-    fontSize: 11,
-    fontWeight: '700',
-    paddingHorizontal: 10,
+    flex: 1,
+    backgroundColor: colors.primary,
     paddingVertical: 4,
-    borderRadius: 10,
-    overflow: 'hidden',
-  },
-  actionsRow: {
-    flexDirection: 'row',
-    marginBottom: 10,
-  },
-  roleRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-  },
-  roleButton: {
+    paddingHorizontal: 8,
+    borderRadius: radius.full,
+    alignItems: 'center',
+    justifyContent: 'center',
     marginRight: 8,
-    marginBottom: 8,
+  },
+  roleBadgeText: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: colors.primaryText,
+    textAlign: 'center',
+  },
+  statusSection: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+  },
+  statusText: {
+    fontSize: 12,
+    fontWeight: '600',
+    marginLeft: 4,
   },
   emptyContainer: {
     flex: 1,
@@ -244,8 +251,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   emptyText: {
-    fontSize: 16,
-    color: '#666',
+    ...type.bodyMuted,
   },
 });
 

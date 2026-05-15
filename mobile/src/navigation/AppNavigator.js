@@ -12,10 +12,14 @@ import RegisterScreen from '../screens/shared/RegisterScreen';
 import IssueDetailScreen from '../screens/shared/IssueDetailScreen';
 import ProfileScreen from '../screens/shared/ProfileScreen';
 import ForgotPasswordScreen from '../screens/shared/ForgotPasswordScreen';
+import NotificationsScreen from '../screens/shared/NotificationsScreen';
 
 // Member screens
+import MemberDashboardScreen from '../screens/member/MemberDashboardScreen';
 import MyIssuesScreen from '../screens/member/MyIssuesScreen';
 import ReportIssueScreen from '../screens/member/ReportIssueScreen';
+import EditIssueScreen from '../screens/member/EditIssueScreen';
+import { Feather } from '@expo/vector-icons';
 
 // Worker screens
 import AssignedTasksScreen from '../screens/worker/AssignedTasksScreen';
@@ -51,22 +55,26 @@ const MemberTabs = () => (
   <Tab.Navigator
     screenOptions={{
       headerShown: true,
-      tabBarActiveTintColor: '#007AFF',
-      tabBarInactiveTintColor: '#999',
+      tabBarActiveTintColor: '#1d1d1b',
+      tabBarInactiveTintColor: '#949089',
       tabBarStyle: {
-        backgroundColor: '#fff',
+        backgroundColor: '#fcfaf8',
         borderTopWidth: 1,
-        borderTopColor: '#e0e0e0',
+        borderTopColor: '#e6dac3',
+        paddingBottom: 5,
+        paddingTop: 5,
+        height: 60,
       },
     }}
   >
     <Tab.Screen
-      name="MyIssuesTab"
-      component={MyIssuesScreen}
+      name="DashboardTab"
+      component={MemberDashboardScreen}
       options={{
-        title: 'My Issues',
-        tabBarLabel: 'Issues',
-        tabBarIcon: ({ color, size }) => <Text style={{ fontSize: size, color }}>📋</Text>,
+        headerShown: false,
+        title: 'Dashboard',
+        tabBarLabel: 'Dashboard',
+        tabBarIcon: ({ color, size }) => <Feather name="grid" size={size} color={color} />,
       }}
     />
     <Tab.Screen
@@ -74,17 +82,41 @@ const MemberTabs = () => (
       component={ReportIssueScreen}
       options={{
         title: 'Report Issue',
-        tabBarLabel: 'Report',
-        tabBarIcon: ({ color, size }) => <Text style={{ fontSize: size, color }}>➕</Text>,
+        tabBarLabel: 'Report Issue',
+        tabBarIcon: ({ color, size }) => <Feather name="plus-circle" size={size} color={color} />,
       }}
+    />
+    <Tab.Screen
+      name="MyIssuesTab"
+      component={MyIssuesScreen}
+      options={{
+        title: 'My Issues',
+        tabBarLabel: 'My Issues',
+        tabBarIcon: ({ color, size }) => <Feather name="check-square" size={size} color={color} />,
+      }}
+    />
+    <Tab.Screen
+      name="NotificationsTab"
+      component={NotificationsScreen}
+      options={({ route }) => ({
+        title: 'Notifications',
+        tabBarLabel: 'Alerts',
+        tabBarIcon: ({ color, size }) => <Feather name="bell" size={size} color={color} />,
+        tabBarBadge: route.params?.unreadCount > 0 ? route.params.unreadCount : undefined,
+        tabBarBadgeStyle: {
+          backgroundColor: '#DC143C',
+          color: '#fff',
+          fontSize: 10,
+        },
+      })}
     />
     <Tab.Screen
       name="ProfileTab"
       component={ProfileScreen}
       options={{
         title: 'Profile',
-        tabBarLabel: 'Profile',
-        tabBarIcon: ({ color, size }) => <Text style={{ fontSize: size, color }}>👤</Text>,
+        tabBarLabel: 'Account',
+        tabBarIcon: ({ color, size }) => <Feather name="user" size={size} color={color} />,
       }}
     />
   </Tab.Navigator>
@@ -105,6 +137,11 @@ const MemberStack = () => (
       component={IssueDetailScreen}
       options={{ headerShown: true, title: 'Issue Details' }}
     />
+    <Stack.Screen
+      name="EditIssue"
+      component={EditIssueScreen}
+      options={{ headerShown: true, title: 'Edit Issue' }}
+    />
   </Stack.Navigator>
 );
 
@@ -112,13 +149,16 @@ const MemberStack = () => (
 const WorkerTabs = () => (
   <Tab.Navigator
     screenOptions={{
-      headerShown: true,
-      tabBarActiveTintColor: '#007AFF',
-      tabBarInactiveTintColor: '#999',
+      headerShown: false,
+      tabBarActiveTintColor: '#1d1d1b',
+      tabBarInactiveTintColor: '#949089',
       tabBarStyle: {
-        backgroundColor: '#fff',
+        backgroundColor: '#fcfaf8',
         borderTopWidth: 1,
-        borderTopColor: '#e0e0e0',
+        borderTopColor: '#e6dac3',
+        paddingBottom: 5,
+        paddingTop: 5,
+        height: 60,
       },
     }}
   >
@@ -128,8 +168,23 @@ const WorkerTabs = () => (
       options={{
         title: 'Assigned Tasks',
         tabBarLabel: 'Tasks',
-        tabBarIcon: ({ color, size }) => <Text style={{ fontSize: size, color }}>🔧</Text>,
+        tabBarIcon: ({ color, size }) => <Feather name="tool" size={size} color={color} />,
       }}
+    />
+    <Tab.Screen
+      name="NotificationsTab"
+      component={NotificationsScreen}
+      options={({ route }) => ({
+        title: 'Notifications',
+        tabBarLabel: 'Alerts',
+        tabBarIcon: ({ color, size }) => <Feather name="bell" size={size} color={color} />,
+        tabBarBadge: route.params?.unreadCount > 0 ? route.params.unreadCount : undefined,
+        tabBarBadgeStyle: {
+          backgroundColor: '#DC143C',
+          color: '#fff',
+          fontSize: 10,
+        },
+      })}
     />
     <Tab.Screen
       name="ProfileTab"
@@ -137,7 +192,7 @@ const WorkerTabs = () => (
       options={{
         title: 'Profile',
         tabBarLabel: 'Profile',
-        tabBarIcon: ({ color, size }) => <Text style={{ fontSize: size, color }}>👤</Text>,
+        tabBarIcon: ({ color, size }) => <Feather name="user" size={size} color={color} />,
       }}
     />
   </Tab.Navigator>
@@ -165,13 +220,16 @@ const WorkerStack = () => (
 const ManagerTabs = () => (
   <Tab.Navigator
     screenOptions={{
-      headerShown: true,
-      tabBarActiveTintColor: '#007AFF',
-      tabBarInactiveTintColor: '#999',
+      headerShown: false,
+      tabBarActiveTintColor: '#1d1d1b',
+      tabBarInactiveTintColor: '#949089',
       tabBarStyle: {
-        backgroundColor: '#fff',
+        backgroundColor: '#fcfaf8',
         borderTopWidth: 1,
-        borderTopColor: '#e0e0e0',
+        borderTopColor: '#e6dac3',
+        paddingBottom: 5,
+        paddingTop: 5,
+        height: 60,
       },
     }}
   >
@@ -181,7 +239,7 @@ const ManagerTabs = () => (
       options={{
         title: 'Dashboard',
         tabBarLabel: 'Dashboard',
-        tabBarIcon: ({ color, size }) => <Text style={{ fontSize: size, color }}>📊</Text>,
+        tabBarIcon: ({ color, size }) => <Feather name="grid" size={size} color={color} />,
       }}
     />
     <Tab.Screen
@@ -190,8 +248,32 @@ const ManagerTabs = () => (
       options={{
         title: 'Worker Management',
         tabBarLabel: 'Workers',
-        tabBarIcon: ({ color, size }) => <Text style={{ fontSize: size, color }}>👷</Text>,
+        tabBarIcon: ({ color, size }) => <Feather name="users" size={size} color={color} />,
       }}
+    />
+    <Tab.Screen
+      name="IssueListTab"
+      component={IssueListScreen}
+      options={{
+        title: 'Issues',
+        tabBarLabel: 'Issues',
+        tabBarIcon: ({ color, size }) => <Feather name="file-text" size={size} color={color} />,
+      }}
+    />
+    <Tab.Screen
+      name="NotificationsTab"
+      component={NotificationsScreen}
+      options={({ route }) => ({
+        title: 'Notifications',
+        tabBarLabel: 'Alerts',
+        tabBarIcon: ({ color, size }) => <Feather name="bell" size={size} color={color} />,
+        tabBarBadge: route.params?.unreadCount > 0 ? route.params.unreadCount : undefined,
+        tabBarBadgeStyle: {
+          backgroundColor: '#DC143C',
+          color: '#fff',
+          fontSize: 10,
+        },
+      })}
     />
     <Tab.Screen
       name="ProfileTab"
@@ -199,7 +281,7 @@ const ManagerTabs = () => (
       options={{
         title: 'Profile',
         tabBarLabel: 'Profile',
-        tabBarIcon: ({ color, size }) => <Text style={{ fontSize: size, color }}>👤</Text>,
+        tabBarIcon: ({ color, size }) => <Feather name="user" size={size} color={color} />,
       }}
     />
   </Tab.Navigator>
@@ -247,13 +329,16 @@ const ManagerStack = () => (
 const AdminTabs = () => (
   <Tab.Navigator
     screenOptions={{
-      headerShown: true,
-      tabBarActiveTintColor: '#007AFF',
-      tabBarInactiveTintColor: '#999',
+      headerShown: false,
+      tabBarActiveTintColor: '#1d1d1b',
+      tabBarInactiveTintColor: '#949089',
       tabBarStyle: {
-        backgroundColor: '#fff',
+        backgroundColor: '#fcfaf8',
         borderTopWidth: 1,
-        borderTopColor: '#e0e0e0',
+        borderTopColor: '#e6dac3',
+        paddingBottom: 5,
+        paddingTop: 5,
+        height: 60,
       },
     }}
   >
@@ -263,8 +348,23 @@ const AdminTabs = () => (
       options={{
         title: 'User Management',
         tabBarLabel: 'Users',
-        tabBarIcon: ({ color, size }) => <Text style={{ fontSize: size, color }}>👥</Text>,
+        tabBarIcon: ({ color, size }) => <Feather name="settings" size={size} color={color} />,
       }}
+    />
+    <Tab.Screen
+      name="NotificationsTab"
+      component={NotificationsScreen}
+      options={({ route }) => ({
+        title: 'Notifications',
+        tabBarLabel: 'Alerts',
+        tabBarIcon: ({ color, size }) => <Feather name="bell" size={size} color={color} />,
+        tabBarBadge: route.params?.unreadCount > 0 ? route.params.unreadCount : undefined,
+        tabBarBadgeStyle: {
+          backgroundColor: '#DC143C',
+          color: '#fff',
+          fontSize: 10,
+        },
+      })}
     />
     <Tab.Screen
       name="ProfileTab"
@@ -272,7 +372,7 @@ const AdminTabs = () => (
       options={{
         title: 'Profile',
         tabBarLabel: 'Profile',
-        tabBarIcon: ({ color, size }) => <Text style={{ fontSize: size, color }}>👤</Text>,
+        tabBarIcon: ({ color, size }) => <Feather name="user" size={size} color={color} />,
       }}
     />
   </Tab.Navigator>

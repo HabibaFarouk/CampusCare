@@ -7,15 +7,17 @@ import {
   KeyboardAvoidingView,
   Platform,
   Text,
-  Picker,
   TouchableOpacity,
+  StatusBar,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import Input from '../../components/common/Input';
 import Button from '../../components/common/Button';
 import PhotoUploader from '../../components/issues/PhotoUploader';
 import { VALID_CATEGORIES } from '../../utils/constants';
 import issueApi from '../../api/issueApi';
 import { useNotification } from '../../utils/NotificationContext';
+import { colors, type, radius, spacing, shadow } from '../../theme';
 import { useAuth } from '../../auth/AuthContext';
 
 const ReportIssueScreen = ({ navigation }) => {
@@ -23,12 +25,13 @@ const ReportIssueScreen = ({ navigation }) => {
     title: '',
     description: '',
     category: 'MAINTENANCE',
-    location: '',
+    building: '',
+    locationDetail: '',
   });
-  const [photos, setPhotos] = useState([]);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
   const [showCategoryPicker, setShowCategoryPicker] = useState(false);
+  const [photoUrls, setPhotoUrls] = useState([]);
   const { showError, showSuccess } = useNotification();
   const { user } = useAuth();
 
@@ -36,6 +39,15 @@ const ReportIssueScreen = ({ navigation }) => {
     label: key.replace('_', ' '),
     value: VALID_CATEGORIES[key]
   }));
+
+  const handlePhotoUpload = (urls) => {
+    if (!Array.isArray(urls) || urls.length === 0) return;
+    setPhotoUrls((prev) => Array.from(new Set([...prev, ...urls])));
+  };
+
+  const handlePhotoDelete = (urlToDelete) => {
+    setPhotoUrls((prev) => prev.filter((url) => url !== urlToDelete));
+  };
 
   const handleSubmit = async () => {
     try {
@@ -57,15 +69,21 @@ const ReportIssueScreen = ({ navigation }) => {
       }
 
       const issueData = {
-        ...formData,
-        imageUrl: photos[0],
+        title: formData.title,
+        description: formData.description,
+        category: formData.category,
+        location: `${formData.building} - ${formData.locationDetail}`.trim(),
+        imageUrl: photoUrls[0] || null,
       };
 
-      await issueApi.createIssue(issueData);
+      console.log('[ReportIssue] Create issue start', { imageUrl: issueData.imageUrl });
+      const created = await issueApi.createIssue(issueData);
+      console.log('[ReportIssue] Create issue success', { id: created?.id, imageUrl: created?.imageUrl });
       showSuccess('Issue reported successfully');
       setTimeout(() => navigation.goBack(), 1500);
     } catch (error) {
       const errorMsg = error.response?.data?.message || error.response?.data?.error || error.message || 'Failed to report issue';
+      console.log('[ReportIssue] Create issue failure', { message: errorMsg });
       showError(errorMsg);
     } finally {
       setLoading(false);
@@ -73,20 +91,22 @@ const ReportIssueScreen = ({ navigation }) => {
   };
 
   return (
-    <KeyboardAvoidingView
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      style={styles.container}
-    >
-      <ScrollView contentContainerStyle={styles.scrollView}>
-        <View style={styles.content}>
+    <SafeAreaView style={styles.safeArea}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={styles.container}
+      >
+        <ScrollView contentContainerStyle={styles.scrollView}>
+          <View style={styles.card}>
           <View style={styles.header}>
-            <Text style={styles.title}>Report an Issue</Text>
+            <Text style={styles.title}>Report a new issue</Text>
+            <Text style={styles.subtitle}>Be specific — clear tickets get fixed faster.</Text>
           </View>
 
           <View style={styles.form}>
             <Input
-              label="Issue Title"
-              placeholder="Brief title of the issue"
+              label="Title"
+              placeholder="e.g. Broken sink in bathroom"
               value={formData.title}
               onChangeText={(value) =>
                 setFormData({ ...formData, title: value })
@@ -132,142 +152,183 @@ const ReportIssueScreen = ({ navigation }) => {
             </View>
 
             <Input
-              label="Location"
-              placeholder="Where is this issue located?"
-              value={formData.location}
+              label="Building"
+              placeholder="e.g. Building C"
+              value={formData.building}
               onChangeText={(value) =>
-                setFormData({ ...formData, location: value })
+                setFormData({ ...formData, building: value })
+              }
+            />
+
+            <Input
+              label="Location detail"
+              placeholder="Floor, room, landmark"
+              value={formData.locationDetail}
+              onChangeText={(value) =>
+                setFormData({ ...formData, locationDetail: value })
               }
             />
 
             <Input
               label="Description"
-              placeholder="Describe the issue in detail"
+              placeholder=""
               value={formData.description}
               onChangeText={(value) =>
                 setFormData({ ...formData, description: value })
               }
               error={errors.description}
               multiline
-              numberOfLines={5}
+              numberOfLines={4}
+              style={{ minHeight: 100, textAlignVertical: 'top' }}
             />
 
-            <PhotoUploader
-              photos={photos}
-              onUpload={(uploadedPhotos) => setPhotos(uploadedPhotos)}
-              userId={user?.id}
-            />
+            <View style={styles.fieldContainer}>
+              <Text style={styles.label}>Photo (optional)</Text>
+              <PhotoUploader
+                photos={[]}
+                onUpload={handlePhotoUpload}
+                onDelete={handlePhotoDelete}
+                loading={loading}
+                userId={user?.id}
+              />
+            </View>
 
-            <Button
-              title="Submit Report"
-              onPress={handleSubmit}
-              loading={loading}
-              style={styles.submitButton}
-            />
-
-            <Button
-              title="Cancel"
-              onPress={() => navigation.goBack()}
-              variant="secondary"
-              style={styles.cancelButton}
-            />
+            <View style={styles.buttonRow}>
+              <TouchableOpacity style={styles.cancelBtn} onPress={() => navigation.goBack()}>
+                <Text style={styles.cancelText}>Cancel</Text>
+              </TouchableOpacity>
+              <Button
+                title="Submit issue"
+                onPress={handleSubmit}
+                loading={loading}
+                variant="action"
+                style={styles.submitButton}
+              />
+            </View>
           </View>
-        </View>
-      </ScrollView>
-    </KeyboardAvoidingView>
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: colors.bg,
+    paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 0) : 0,
+  },
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: colors.bg,
   },
   scrollView: {
     flexGrow: 1,
+    padding: spacing.lg,
+    paddingTop: spacing.xl,
   },
-  content: {
-    padding: 16,
+  card: {
+    backgroundColor: colors.surface,
+    borderRadius: radius.lg,
+    padding: spacing.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
+    ...shadow.card,
   },
   header: {
-    marginBottom: 20,
+    marginBottom: spacing.xl,
   },
   title: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: '#007AFF',
+    fontSize: 28,
+    fontFamily: 'serif',
+    fontWeight: 'bold',
+    color: colors.text,
+    marginBottom: spacing.xs,
+  },
+  subtitle: {
+    ...type.bodyMuted,
   },
   form: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 16,
+    // padding removed as it's already inside card
   },
   fieldContainer: {
-    marginBottom: 16,
+    marginBottom: 8,
     zIndex: 10,
   },
   label: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#333333',
-    marginBottom: 8,
+    color: colors.text,
+    marginBottom: 6,
   },
   categoryButton: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#ddd',
+    borderColor: colors.border,
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 12,
-    backgroundColor: '#f9f9f9',
+    backgroundColor: colors.surface,
   },
   categoryButtonText: {
-    fontSize: 14,
-    color: '#333333',
+    fontSize: 16,
+    color: colors.text,
     flex: 1,
   },
   categoryArrow: {
     fontSize: 10,
-    color: '#999',
+    color: colors.textMuted,
   },
   categoryDropdown: {
     position: 'absolute',
-    top: 56,
+    top: 66,
     left: 0,
     right: 0,
-    backgroundColor: '#fff',
+    backgroundColor: colors.surface,
     borderWidth: 1,
-    borderColor: '#ddd',
+    borderColor: colors.border,
     borderRadius: 8,
-    marginTop: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowColor: '#1d1d1b',
+    shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.1,
-    shadowRadius: 3,
+    shadowRadius: 8,
     elevation: 5,
     zIndex: 100,
   },
   categoryOption: {
     paddingHorizontal: 12,
-    paddingVertical: 12,
+    paddingVertical: 14,
     borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
+    borderBottomColor: colors.surfaceAlt,
   },
   categoryOptionText: {
-    fontSize: 14,
-    color: '#666666',
+    fontSize: 16,
+    color: colors.text,
   },
   categoryOptionTextSelected: {
-    color: '#007AFF',
+    fontWeight: 'bold',
+  },
+  buttonRow: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    alignItems: 'center',
+    marginTop: spacing.xl,
+    zIndex: 1, // To ensure it doesn't overlap category dropdown if it opens
+  },
+  cancelBtn: {
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    marginRight: spacing.sm,
+  },
+  cancelText: {
+    ...type.body,
     fontWeight: '600',
   },
   submitButton: {
-    marginTop: 20,
-  },
-  cancelButton: {
-    marginTop: 12,
+    paddingHorizontal: 24,
   },
 });
 

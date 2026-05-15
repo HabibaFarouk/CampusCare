@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { View, StyleSheet, Text, ActivityIndicator, Alert } from 'react-native';
+import { View, StyleSheet, Text, ActivityIndicator, Alert, Platform, StatusBar } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import Button from '../../components/common/Button';
 import managerApi from '../../api/managerApi';
 
@@ -34,44 +35,51 @@ const WorkerDetailScreen = ({ navigation, route }) => {
   }
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Worker Details</Text>
-      {worker ? (
-        <View style={styles.detailsCard}>
-          <Text style={styles.name}>{worker.name}</Text>
-          <Text style={styles.email}>{worker.email}</Text>
-          <View style={styles.row}>
-            <Text style={styles.label}>Status:</Text>
-            <Text style={styles.value}>{worker.isActive ? 'ACTIVE' : 'INACTIVE'}</Text>
+    <SafeAreaView style={styles.safeArea}>
+      <View style={styles.container}>
+        <Text style={styles.title}>Worker Details</Text>
+        {worker ? (
+          <View style={styles.detailsCard}>
+            <Text style={styles.name}>{worker.name}</Text>
+            <Text style={styles.email}>{worker.email}</Text>
+            <View style={styles.row}>
+              <Text style={styles.label}>Status:</Text>
+              <Text style={styles.value}>{worker.isActive ? 'ACTIVE' : 'INACTIVE'}</Text>
+            </View>
+            <View style={styles.row}>
+              <Text style={styles.label}>Active Tasks:</Text>
+              <Text style={styles.value}>{worker.activeTasks || 0}</Text>
+            </View>
+            <View style={styles.row}>
+              <Text style={styles.label}>Finalized Tasks:</Text>
+              <Text style={styles.value}>{worker.resolvedTasks || 0}</Text>
+            </View>
+            <View style={styles.row}>
+              <Text style={styles.label}>Joined:</Text>
+              <Text style={styles.value}>
+                {worker.createdAt ? new Date(worker.createdAt).toLocaleDateString() : 'N/A'}
+              </Text>
+            </View>
           </View>
-          <View style={styles.row}>
-            <Text style={styles.label}>Active Tasks:</Text>
-            <Text style={styles.value}>{worker.activeTasks || 0}</Text>
-          </View>
-          <View style={styles.row}>
-            <Text style={styles.label}>Resolved Tasks:</Text>
-            <Text style={styles.value}>{worker.resolvedTasks || 0}</Text>
-          </View>
-          <View style={styles.row}>
-            <Text style={styles.label}>Joined:</Text>
-            <Text style={styles.value}>
-              {worker.createdAt ? new Date(worker.createdAt).toLocaleDateString() : 'N/A'}
-            </Text>
-          </View>
-        </View>
-      ) : (
-        <Text style={styles.subtitle}>No worker selected.</Text>
-      )}
-      <Button title="Back" onPress={() => navigation.goBack()} />
-    </View>
+        ) : (
+          <Text style={styles.subtitle}>No worker selected.</Text>
+        )}
+        <Button title="Back" onPress={() => navigation.goBack()} />
+      </View>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: '#f6f1ec',
+    paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 0) : 0,
+  },
   container: {
     flex: 1,
     padding: 24,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#f6f1ec',
   },
   centerContainer: {
     flex: 1,
@@ -91,7 +99,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   detailsCard: {
-    backgroundColor: '#fff',
+    backgroundColor: '#fcfaf8',
     borderRadius: 12,
     padding: 16,
     marginBottom: 20,
@@ -99,12 +107,12 @@ const styles = StyleSheet.create({
   name: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#000',
+    color: '#1d1d1b',
     marginBottom: 6,
   },
   email: {
     fontSize: 12,
-    color: '#666',
+    color: '#68645e',
     marginBottom: 12,
   },
   row: {
@@ -114,12 +122,12 @@ const styles = StyleSheet.create({
   },
   label: {
     fontSize: 13,
-    color: '#666',
+    color: '#68645e',
   },
   value: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#000',
+    color: '#1d1d1b',
   },
 });
 

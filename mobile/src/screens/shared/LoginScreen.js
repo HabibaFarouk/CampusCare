@@ -9,9 +9,11 @@ import {
   Text,
   TouchableOpacity,
   StatusBar,
+  Image,
 } from 'react-native';
 import Input from '../../components/common/Input';
 import Button from '../../components/common/Button';
+import { colors, type } from '../../theme';
 import { useAuth } from '../../auth/AuthContext';
 
 const LoginScreen = ({ navigation }) => {
@@ -45,15 +47,17 @@ const LoginScreen = ({ navigation }) => {
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       style={styles.container}
     >
-      <StatusBar barStyle="light-content" backgroundColor="#1565C0" />
+      <StatusBar barStyle="dark-content" backgroundColor={colors.bg} />
       <ScrollView contentContainerStyle={styles.scrollView} keyboardShouldPersistTaps="handled">
         {/* Hero header */}
         <View style={styles.hero}>
-          <View style={styles.logoCircle}>
-            <Text style={styles.logoIcon}>🏫</Text>
-          </View>
+          <Image 
+            source={require('../../../assets/Logo.png')} 
+            style={styles.logo} 
+            resizeMode="contain" 
+          />
           <Text style={styles.appName}>CampusCare</Text>
-          <Text style={styles.tagline}>Issue Management System</Text>
+          <Text style={styles.tagline}>German International University</Text>
         </View>
 
         {/* Form card */}
@@ -90,6 +94,7 @@ const LoginScreen = ({ navigation }) => {
             title="Sign In"
             onPress={handleLogin}
             loading={loading}
+            variant="action"
             style={styles.signInButton}
           />
 
@@ -117,7 +122,7 @@ const LoginScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#1565C0',
+    backgroundColor: colors.bg,
   },
   scrollView: {
     flexGrow: 1,
@@ -128,33 +133,22 @@ const styles = StyleSheet.create({
     paddingBottom: 40,
     paddingHorizontal: 20,
   },
-  logoCircle: {
+  logo: {
     width: 80,
     height: 80,
-    borderRadius: 40,
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    justifyContent: 'center',
-    alignItems: 'center',
     marginBottom: 16,
   },
-  logoIcon: {
-    fontSize: 40,
-  },
   appName: {
-    fontSize: 34,
-    fontWeight: '800',
-    color: '#ffffff',
-    letterSpacing: 0.5,
+    ...type.title,
+    fontSize: 28,
   },
   tagline: {
-    fontSize: 13,
-    color: 'rgba(255,255,255,0.75)',
-    marginTop: 6,
-    letterSpacing: 0.3,
+    ...type.small,
+    marginTop: 4,
   },
   card: {
     flex: 1,
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.surface,
     borderTopLeftRadius: 28,
     borderTopRightRadius: 28,
     paddingHorizontal: 24,
@@ -163,14 +157,14 @@ const styles = StyleSheet.create({
     minHeight: 460,
   },
   cardTitle: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: '#1a1a2e',
+    fontSize: 32,
+    fontFamily: 'serif',
+    fontWeight: 'bold',
+    color: colors.text,
     marginBottom: 4,
   },
   cardSubtitle: {
-    fontSize: 14,
-    color: '#8a8a9a',
+    ...type.bodyMuted,
     marginBottom: 28,
   },
   forgotRow: {
@@ -181,7 +175,7 @@ const styles = StyleSheet.create({
   },
   forgotText: {
     fontSize: 13,
-    color: '#1565C0',
+    color: colors.action,
     fontWeight: '600',
   },
   signInButton: {
@@ -195,11 +189,11 @@ const styles = StyleSheet.create({
   dividerLine: {
     flex: 1,
     height: 1,
-    backgroundColor: '#e8e8f0',
+    backgroundColor: colors.border,
   },
   dividerText: {
     fontSize: 12,
-    color: '#b0b0c0',
+    color: colors.textSubtle,
     marginHorizontal: 12,
     fontWeight: '600',
   },
@@ -209,10 +203,10 @@ const styles = StyleSheet.create({
   },
   signUpText: {
     fontSize: 14,
-    color: '#6b6b80',
+    color: colors.textMuted,
   },
   signUpLink: {
-    color: '#1565C0',
+    color: colors.action,
     fontWeight: '700',
   },
 });

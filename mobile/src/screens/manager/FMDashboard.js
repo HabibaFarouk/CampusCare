@@ -9,7 +9,9 @@ import {
 } from 'react-native';
 import KPIWidget from '../../components/manager/KPIWidget';
 import Button from '../../components/common/Button';
+import DashboardHeader from '../../components/common/DashboardHeader';
 import managerApi from '../../api/managerApi';
+import { colors, spacing } from '../../theme';
 
 const FMDashboard = ({ navigation }) => {
   const [kpis, setKpis] = useState(null);
@@ -46,10 +48,12 @@ const FMDashboard = ({ navigation }) => {
   }
 
   return (
-    <ScrollView style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.title}>Facility Manager Dashboard</Text>
-      </View>
+    <View style={styles.container}>
+      <DashboardHeader />
+      <ScrollView style={styles.content}>
+        <View style={styles.titleSection}>
+          <Text style={styles.title}>Facility Manager Dashboard</Text>
+        </View>
 
       {kpis && (
         <View style={styles.kpiGrid}>
@@ -66,7 +70,7 @@ const FMDashboard = ({ navigation }) => {
             icon="⏳"
           />
           <KPIWidget
-            label="Resolved"
+            label="Finalized"
             value={kpis.resolvedIssues || 0}
             trend={kpis.resolvedTrend}
             icon="✅"
@@ -97,35 +101,35 @@ const FMDashboard = ({ navigation }) => {
         />
       </View>
 
-      <View style={styles.refreshButton}>
-        <Button
-          title="Refresh"
-          onPress={loadDashboard}
-          variant="secondary"
-        />
-      </View>
-    </ScrollView>
+        <View style={styles.refreshButton}>
+          <Button
+            title="Refresh"
+            onPress={loadDashboard}
+            variant="secondary"
+          />
+        </View>
+      </ScrollView>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: colors.bg,
   },
-  centerContainer: {
+  content: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
   },
-  header: {
-    backgroundColor: '#007AFF',
-    padding: 20,
+  titleSection: {
+    padding: spacing.lg,
+    paddingBottom: 0,
   },
   title: {
-    fontSize: 24,
+    fontSize: 28,
     fontWeight: '700',
-    color: '#fff',
+    fontFamily: 'serif',
+    color: colors.text,
   },
   kpiGrid: {
     flexDirection: 'row',

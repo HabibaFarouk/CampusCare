@@ -1,24 +1,31 @@
 import React from 'react';
-import { View, StyleSheet, Text } from 'react-native';
+import { View, StyleSheet, Text, SafeAreaView, Platform, StatusBar } from 'react-native';
 import Button from '../../components/common/Button';
 
 const ReportsScreen = ({ navigation }) => (
-  <View style={styles.container}>
-    <Text style={styles.title}>Reports</Text>
-    <Text style={styles.subtitle}>
-      This screen will show manager reports and analytics.
-    </Text>
-    <Button title="Back" onPress={() => navigation.goBack()} />
-  </View>
+  <SafeAreaView style={styles.safeArea}>
+    <View style={styles.container}>
+      <Text style={styles.title}>Reports</Text>
+      <Text style={styles.subtitle}>
+        This screen will show manager reports and analytics.
+      </Text>
+      <Button title="Back" onPress={() => navigation.goBack()} />
+    </View>
+  </SafeAreaView>
 );
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: '#f6f1ec',
+    paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 0) : 0,
+  },
   container: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
     padding: 24,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#f6f1ec',
   },
   title: {
     fontSize: 22,

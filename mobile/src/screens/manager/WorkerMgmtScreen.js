@@ -6,7 +6,10 @@ import {
   ActivityIndicator,
   Alert,
   Text,
+  Platform,
+  StatusBar,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import WorkerRow from '../../components/manager/WorkerRow';
 import Button from '../../components/common/Button';
 import managerApi from '../../api/managerApi';
@@ -67,7 +70,8 @@ const WorkerMgmtScreen = ({ navigation }) => {
   }
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.safeArea}>
+      <View style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.title}>Worker Management</Text>
         <Text style={styles.subtitle}>{workers.length} workers</Text>
@@ -93,14 +97,20 @@ const WorkerMgmtScreen = ({ navigation }) => {
           size="lg"
         />
       </View>
-    </View>
+      </View>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: '#f6f1ec',
+    paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 0) : 0,
+  },
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#f6f1ec',
   },
   centerContainer: {
     flex: 1,
@@ -108,19 +118,19 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   header: {
-    backgroundColor: '#fff',
+    backgroundColor: '#fcfaf8',
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#E8E8E8',
+    borderBottomColor: '#e6dac3',
   },
   title: {
     fontSize: 20,
     fontWeight: '700',
-    color: '#000',
+    color: '#1d1d1b',
   },
   subtitle: {
     fontSize: 14,
-    color: '#666',
+    color: '#68645e',
     marginTop: 4,
   },
   list: {
@@ -133,13 +143,13 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 16,
-    color: '#666',
+    color: '#68645e',
   },
   fab: {
     padding: 16,
-    backgroundColor: '#fff',
+    backgroundColor: '#fcfaf8',
     borderTopWidth: 1,
-    borderTopColor: '#E8E8E8',
+    borderTopColor: '#e6dac3',
   },
 });
 

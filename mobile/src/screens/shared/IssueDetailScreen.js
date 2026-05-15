@@ -6,7 +6,10 @@ import {
   Text,
   ActivityIndicator,
   Alert,
+  Platform,
+  StatusBar,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import StatusBadge from '../../components/common/StatusBadge';
 import CommentList from '../../components/issues/CommentList';
 import PhotoUploader from '../../components/issues/PhotoUploader';
@@ -52,7 +55,9 @@ const IssueDetailScreen = ({ route, navigation }) => {
         issueApi.getIssue(issueId),
         issueApi.getComments(issueId),
       ]);
-      const photos = [issueData?.imageUrl, issueData?.completionPhotoUrl].filter(Boolean);
+      const photos = [issueData?.imageUrl, issueData?.completionPhotoUrl].filter(
+        (url) => url && !String(url).startsWith('file://') && !String(url).startsWith('content://')
+      );
       const normalized = {
         ...issueData,
         assignedToLabel:
@@ -73,12 +78,23 @@ const IssueDetailScreen = ({ route, navigation }) => {
   const handlePhotoUpload = async (photos) => {
     try {
       setUploading(true);
+      if (!Array.isArray(photos) || photos.length === 0) {
+        return;
+      }
+      console.log('[IssueDetail] Photo upload start', { issueId, count: photos.length });
       for (const photo of photos) {
         await issueApi.uploadPhoto(issueId, photo);
       }
+      setIssue((prev) => {
+        const existing = prev?.photos || [];
+        const merged = Array.from(new Set([...existing, ...photos]));
+        return { ...prev, photos: merged };
+      });
+      console.log('[IssueDetail] Photo upload success', { issueId });
       Alert.alert('Success', 'Photos uploaded successfully');
       loadIssueDetails();
     } catch (error) {
+      console.log('[IssueDetail] Photo upload failure', { message: error.message });
       Alert.alert('Error', 'Failed to upload photos');
     } finally {
       setUploading(false);
@@ -111,6 +127,19 @@ const IssueDetailScreen = ({ route, navigation }) => {
     }
   };
 
+  const handleManagerStatus = async (nextStatus) => {
+    try {
+      setStatusUpdating(true);
+      await issueApi.updateIssueStatus(issueId, nextStatus);
+      await loadIssueDetails();
+      Alert.alert('Success', `Issue set to ${nextStatus.replace('_', ' ')}`);
+    } catch (error) {
+      Alert.alert('Error', 'Failed to update issue status');
+    } finally {
+      setStatusUpdating(false);
+    }
+  };
+
   const handleFinish = async () => {
     try {
       setStatusUpdating(true);
@@ -129,25 +158,42 @@ const IssueDetailScreen = ({ route, navigation }) => {
       setStatusUpdating(true);
       await issueApi.closeIssue(issueId);
       await loadIssueDetails();
-      Alert.alert('Success', 'Issue resolved');
+      Alert.alert('Success', 'Issue finalized');
     } catch (error) {
-      Alert.alert('Error', 'Failed to resolve issue');
+      Alert.alert('Error', 'Failed to finalize issue');
     } finally {
       setStatusUpdating(false);
     }
   };
 
   const handleDelete = async () => {
-    try {
-      setStatusUpdating(true);
-      await issueApi.deleteMyIssue(issueId);
-      Alert.alert('Success', 'Issue deleted');
-      navigation.goBack();
-    } catch (error) {
-      Alert.alert('Error', 'Failed to delete issue');
-    } finally {
-      setStatusUpdating(false);
-    }
+    Alert.alert(
+      'Confirm Delete',
+      'Are you sure you want to delete this issue? This action cannot be undone.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              setStatusUpdating(true);
+              if (user?.role === 'FACILITY_MANAGER' || user?.role === 'ADMIN') {
+                await issueApi.deleteIssue(issueId);
+              } else {
+                await issueApi.deleteMyIssue(issueId);
+              }
+              Alert.alert('Success', 'Issue deleted');
+              navigation.goBack();
+            } catch (error) {
+              Alert.alert('Error', 'Failed to delete issue');
+            } finally {
+              setStatusUpdating(false);
+            }
+          },
+        },
+      ]
+    );
   };
 
   const handleAddComment = async () => {
@@ -186,7 +232,8 @@ const IssueDetailScreen = ({ route, navigation }) => {
   }
 
   return (
-    <ScrollView style={styles.container}>
+    <SafeAreaView style={styles.safeArea}>
+      <ScrollView style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.title}>{issue.title}</Text>
         <StatusBadge status={issue.status} size="lg" />
@@ -247,9 +294,17 @@ const IssueDetailScreen = ({ route, navigation }) => {
         </View>
       )}
 
-      {user?.role === 'MEMBER' && issue.createdById === user?.id && issue.status === 'SUBMITTED' && (
+      {user?.role === 'MEMBER' && issue.createdById === user?.id && issue.status === 'SUBMITTED' && !issue.assignedToId && (
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Member Actions</Text>
+          <Button
+            title="Edit Issue"
+            onPress={() => navigation.navigate('EditIssue', { issue })}
+            size="sm"
+            disabled={statusUpdating}
+            loading={statusUpdating}
+            style={styles.actionButton}
+          />
           <Button
             title="Delete Issue"
             onPress={handleDelete}
@@ -264,12 +319,41 @@ const IssueDetailScreen = ({ route, navigation }) => {
       {(user?.role === 'FACILITY_MANAGER' || user?.role === 'ADMIN') && (
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Manager Actions</Text>
+          {issue.status === 'ASSIGNED' && (
+            <Button
+              title="Mark In Progress"
+              onPress={() => handleManagerStatus('IN_PROGRESS')}
+              size="sm"
+              disabled={statusUpdating}
+              loading={statusUpdating}
+              style={styles.actionButton}
+            />
+          )}
+          {issue.status === 'IN_PROGRESS' && (
+            <Button
+              title="Mark Finished"
+              onPress={() => handleManagerStatus('FINISHED')}
+              size="sm"
+              disabled={statusUpdating}
+              loading={statusUpdating}
+              style={styles.actionButton}
+            />
+          )}
           <Button
-            title="Resolve Issue"
+            title="Finalize Issue"
             onPress={handleResolve}
             size="sm"
-            disabled={issue.status === 'RESOLVED' || statusUpdating}
+            disabled={issue.status !== 'FINISHED' || statusUpdating}
             loading={statusUpdating}
+          />
+          <Button
+            title="Delete Issue"
+            onPress={handleDelete}
+            size="sm"
+            variant="danger"
+            disabled={statusUpdating}
+            loading={statusUpdating}
+            style={{ marginTop: 8 }}
           />
         </View>
       )}
@@ -322,14 +406,20 @@ const IssueDetailScreen = ({ route, navigation }) => {
       <View style={styles.actions}>
         <Button title="Back" onPress={() => navigation.goBack()} />
       </View>
-    </ScrollView>
+      </ScrollView>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: '#f6f1ec',
+    paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 0) : 0,
+  },
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#f6f1ec',
   },
   centerContainer: {
     flex: 1,
@@ -337,29 +427,29 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   header: {
-    backgroundColor: '#fff',
+    backgroundColor: '#fcfaf8',
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#E8E8E8',
+    borderBottomColor: '#e6dac3',
   },
   title: {
     fontSize: 24,
     fontWeight: '700',
-    color: '#000',
+    color: '#1d1d1b',
     marginBottom: 12,
   },
   section: {
-    backgroundColor: '#fff',
+    backgroundColor: '#fcfaf8',
     marginVertical: 8,
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#E8E8E8',
+    borderBottomColor: '#e6dac3',
   },
   sectionTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#000',
+    color: '#1d1d1b',
     marginBottom: 8,
   },
   row: {
@@ -369,12 +459,12 @@ const styles = StyleSheet.create({
   },
   label: {
     fontSize: 14,
-    color: '#666',
+    color: '#68645e',
     fontWeight: '500',
   },
   value: {
     fontSize: 14,
-    color: '#000',
+    color: '#1d1d1b',
     fontWeight: '600',
   },
   description: {
@@ -394,13 +484,16 @@ const styles = StyleSheet.create({
     flex: 1,
     marginRight: 8,
   },
+  actionButtonLast: {
+    flex: 1,
+  },
   workerRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingVertical: 10,
     borderBottomWidth: 1,
-    borderBottomColor: '#E8E8E8',
+    borderBottomColor: '#e6dac3',
   },
   workerInfo: {
     flex: 1,
@@ -409,15 +502,15 @@ const styles = StyleSheet.create({
   workerName: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#000',
+    color: '#1d1d1b',
   },
   workerEmail: {
     fontSize: 12,
-    color: '#666',
+    color: '#68645e',
   },
   emptyText: {
     fontSize: 14,
-    color: '#999',
+    color: '#949089',
     fontStyle: 'italic',
   },
 });

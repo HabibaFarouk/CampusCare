@@ -9,7 +9,13 @@ const IssueCard = ({ issue, onPress }) => {
       ? issue.assignedTo.name || issue.assignedTo.email
       : issue.assignedTo;
 
-  const previewImage = issue.imageUrl || issue.completionPhotoUrl;
+  const previewCandidate = issue.imageUrl || issue.completionPhotoUrl;
+  const previewImage =
+    previewCandidate &&
+    !String(previewCandidate).startsWith('file://') &&
+    !String(previewCandidate).startsWith('content://')
+      ? previewCandidate
+      : null;
 
   return (
     <Card onPress={onPress} elevated>
@@ -56,16 +62,16 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#000',
+    color: '#1d1d1b', // theme text
     marginBottom: 4,
   },
   category: {
     fontSize: 12,
-    color: '#666',
+    color: '#68645e', // theme textMuted
   },
   description: {
     fontSize: 14,
-    color: '#555',
+    color: '#68645e', // theme textMuted
     marginBottom: 12,
     lineHeight: 20,
     flex: 1,
@@ -80,21 +86,22 @@ const styles = StyleSheet.create({
     height: 64,
     borderRadius: 8,
     marginRight: 12,
-    backgroundColor: '#e0e0e0',
+    backgroundColor: '#f0ece7', // theme surfaceAlt
   },
   footer: {
     borderTopWidth: 1,
-    borderTopColor: '#E8E8E8',
+    borderTopColor: '#e6dac3', // theme border
     paddingTop: 12,
   },
   date: {
     fontSize: 12,
-    color: '#999',
+    color: '#949089', // theme textSubtle
     marginBottom: 4,
   },
   assignee: {
     fontSize: 12,
-    color: '#007AFF',
+    color: '#1d1d1b', // theme text
+    fontWeight: '600',
   },
 });
 

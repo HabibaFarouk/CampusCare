@@ -2,9 +2,13 @@ import client from './client';
 
 const issueApi = {
   createIssue: async (issueData) => {
+    const resolvedImageUrl = issueData?.imageUrl || issueData?.photos?.[0];
+    if (resolvedImageUrl && (resolvedImageUrl.startsWith('file://') || resolvedImageUrl.startsWith('content://'))) {
+      throw new Error('Issue image must be a public URL');
+    }
     const payload = {
       ...issueData,
-      imageUrl: issueData?.imageUrl || issueData?.photos?.[0],
+      imageUrl: resolvedImageUrl,
     };
     const response = await client.post('/issues', payload);
     return response.data;
@@ -63,12 +67,28 @@ const issueApi = {
 
   uploadPhoto: async (issueId, photoData) => {
     const photoUrl = typeof photoData === 'string' ? photoData : photoData?.uri;
+    if (!photoUrl || photoUrl.startsWith('file://') || photoUrl.startsWith('content://')) {
+      throw new Error('Photo upload requires a public URL');
+    }
+    console.log('[issueApi.uploadPhoto] start', { issueId, photoUrl });
     const response = await client.post(`/issues/${issueId}/photo`, { photoUrl });
+    console.log('[issueApi.uploadPhoto] success', { issueId });
     return response.data;
   },
 
   deleteMyIssue: async (issueId) => {
     const response = await client.delete(`/issues/${issueId}/member`);
+    return response.data;
+  },
+
+  // Manager/Admin: DELETE /issues/:id
+  deleteIssue: async (issueId) => {
+    const response = await client.delete(`/issues/${issueId}`);
+    return response.data;
+  },
+
+  updateMyIssue: async (issueId, payload) => {
+    const response = await client.put(`/issues/${issueId}/member`, payload);
     return response.data;
   },
 };

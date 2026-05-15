@@ -8,8 +8,11 @@ import {
   Text,
 } from 'react-native';
 import IssueCard from '../../components/issues/IssueCard';
-import Button from '../../components/common/Button';
+import Dropdown from '../../components/common/Dropdown';
+import DashboardHeader from '../../components/common/DashboardHeader';
 import issueApi from '../../api/issueApi';
+import { colors, spacing } from '../../theme';
+import { STATUS_LABELS } from '../../utils/constants';
 
 const AssignedTasksScreen = ({ navigation }) => {
   const [tasks, setTasks] = useState([]);
@@ -54,17 +57,17 @@ const AssignedTasksScreen = ({ navigation }) => {
 
   return (
     <View style={styles.container}>
+      <DashboardHeader />
+      <View style={styles.titleSection}>
+        <Text style={styles.title}>Assigned Tasks</Text>
+      </View>
       <View style={styles.filterContainer}>
-        {['ASSIGNED', 'IN_PROGRESS', 'RESOLVED'].map((status) => (
-          <Button
-            key={status}
-            title={status}
-            onPress={() => setFilter(status)}
-            variant={filter === status ? 'primary' : 'secondary'}
-            size="sm"
-            style={styles.filterButton}
-          />
-        ))}
+        <Dropdown
+          value={filter}
+          options={['ASSIGNED', 'IN_PROGRESS', 'FINISHED', 'FINALIZED', 'ALL']}
+          onSelect={setFilter}
+          labelMap={STATUS_LABELS}
+        />
       </View>
 
       {tasks.length > 0 ? (
@@ -86,7 +89,17 @@ const AssignedTasksScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: colors.bg,
+  },
+  titleSection: {
+    padding: spacing.lg,
+    paddingBottom: 0,
+  },
+  title: {
+    fontSize: 28,
+    fontWeight: '700',
+    fontFamily: 'serif',
+    color: colors.text,
   },
   centerContainer: {
     flex: 1,
@@ -94,15 +107,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   filterContainer: {
-    flexDirection: 'row',
     padding: 12,
-    backgroundColor: '#fff',
+    backgroundColor: '#fcfaf8',
     borderBottomWidth: 1,
-    borderBottomColor: '#E8E8E8',
-  },
-  filterButton: {
-    marginHorizontal: 4,
-    flex: 1,
+    borderBottomColor: '#e6dac3',
+    zIndex: 10,
   },
   list: {
     padding: 12,
@@ -114,7 +123,7 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 16,
-    color: '#666',
+    color: '#68645e',
   },
 });
 
