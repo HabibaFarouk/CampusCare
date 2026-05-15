@@ -3,7 +3,11 @@ import client from './client';
 const adminApi = {
   getUsers: async () => {
     const response = await client.get('/admin/users');
-    return response.data || [];
+    const payload = response.data;
+    if (Array.isArray(payload)) return payload;
+    if (Array.isArray(payload?.data)) return payload.data;
+    if (Array.isArray(payload?.users)) return payload.users;
+    return [];
   },
 
   updateUserStatus: async (userId, isActive) => {

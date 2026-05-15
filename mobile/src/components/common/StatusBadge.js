@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { STATUS_COLORS, VALID_STATUSES } from '../../utils/constants';
+import { STATUS_COLORS, STATUS_LABELS } from '../../utils/constants';
 
 const StatusBadge = ({ status, size = 'md' }) => {
   const backgroundColor = STATUS_COLORS[status] || '#999';
@@ -9,7 +9,7 @@ const StatusBadge = ({ status, size = 'md' }) => {
   return (
     <View style={[styles.badge, { backgroundColor }, sizeStyle]}>
       <Text style={[styles.text, styles[`text_${size}`]]}>
-        {status}
+        {STATUS_LABELS[status] || status}
       </Text>
     </View>
   );

@@ -12,6 +12,7 @@ import Dropdown from '../../components/common/Dropdown';
 import DashboardHeader from '../../components/common/DashboardHeader';
 import issueApi from '../../api/issueApi';
 import { colors, spacing } from '../../theme';
+import { STATUS_LABELS } from '../../utils/constants';
 
 const AssignedTasksScreen = ({ navigation }) => {
   const [tasks, setTasks] = useState([]);
@@ -63,8 +64,9 @@ const AssignedTasksScreen = ({ navigation }) => {
       <View style={styles.filterContainer}>
         <Dropdown
           value={filter}
-          options={['ASSIGNED', 'IN_PROGRESS', 'RESOLVED', 'ALL']}
+          options={['ASSIGNED', 'IN_PROGRESS', 'FINISHED', 'FINALIZED', 'ALL']}
           onSelect={setFilter}
+          labelMap={STATUS_LABELS}
         />
       </View>
 

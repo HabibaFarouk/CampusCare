@@ -49,7 +49,7 @@ const WorkerDetailScreen = ({ navigation, route }) => {
             <Text style={styles.value}>{worker.activeTasks || 0}</Text>
           </View>
           <View style={styles.row}>
-            <Text style={styles.label}>Resolved Tasks:</Text>
+            <Text style={styles.label}>Finalized Tasks:</Text>
             <Text style={styles.value}>{worker.resolvedTasks || 0}</Text>
           </View>
           <View style={styles.row}>

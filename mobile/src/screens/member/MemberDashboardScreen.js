@@ -15,6 +15,7 @@ import DashboardHeader from '../../components/common/DashboardHeader';
 import issueApi from '../../api/issueApi';
 import { colors, spacing, radius, type, shadow } from '../../theme';
 import { useNotification } from '../../utils/NotificationContext';
+import { STATUS_LABELS } from '../../utils/constants';
 
 const MemberDashboardScreen = ({ navigation }) => {
   const { user, logout } = useAuth();
@@ -24,8 +25,8 @@ const MemberDashboardScreen = ({ navigation }) => {
     ISSUED: 0,
     ASSIGNED: 0,
     IN_PROGRESS: 0,
-    RESOLVED: 0,
     FINISHED: 0,
+    FINALIZED: 0,
   });
 
   useEffect(() => {
@@ -45,8 +46,8 @@ const MemberDashboardScreen = ({ navigation }) => {
         ISSUED: 0,
         ASSIGNED: 0,
         IN_PROGRESS: 0,
-        RESOLVED: 0,
         FINISHED: 0,
+        FINALIZED: 0,
       };
 
       issuesList.forEach(issue => {
@@ -55,6 +56,8 @@ const MemberDashboardScreen = ({ navigation }) => {
         } else if (issue.status === 'SUBMITTED') {
           // Map SUBMITTED to ISSUED if that's the intention
           newStats.ISSUED++;
+        } else if (issue.status === 'RESOLVED') {
+          newStats.FINALIZED++;
         }
       });
 
@@ -89,15 +92,15 @@ const MemberDashboardScreen = ({ navigation }) => {
         ) : (
           <View style={styles.statsContainer}>
             <View style={styles.statsRow}>
-              <StatCard label="ISSUED" value={stats.ISSUED} />
-              <StatCard label="ASSIGNED" value={stats.ASSIGNED} />
+              <StatCard label={STATUS_LABELS.SUBMITTED} value={stats.ISSUED} />
+              <StatCard label={STATUS_LABELS.ASSIGNED} value={stats.ASSIGNED} />
             </View>
             <View style={styles.statsRow}>
-              <StatCard label="IN PROGRESS" value={stats.IN_PROGRESS} />
-              <StatCard label="RESOLVED" value={stats.RESOLVED} />
+              <StatCard label={STATUS_LABELS.IN_PROGRESS} value={stats.IN_PROGRESS} />
+              <StatCard label={STATUS_LABELS.FINISHED} value={stats.FINISHED} />
             </View>
             <View style={styles.statsRowFull}>
-              <StatCard label="FINISHED" value={stats.FINISHED} />
+              <StatCard label={STATUS_LABELS.FINALIZED} value={stats.FINALIZED} />
             </View>
           </View>
         )}

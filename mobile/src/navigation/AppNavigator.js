@@ -12,6 +12,7 @@ import RegisterScreen from '../screens/shared/RegisterScreen';
 import IssueDetailScreen from '../screens/shared/IssueDetailScreen';
 import ProfileScreen from '../screens/shared/ProfileScreen';
 import ForgotPasswordScreen from '../screens/shared/ForgotPasswordScreen';
+import NotificationsScreen from '../screens/shared/NotificationsScreen';
 
 // Member screens
 import MemberDashboardScreen from '../screens/member/MemberDashboardScreen';
@@ -94,6 +95,21 @@ const MemberTabs = () => (
       }}
     />
     <Tab.Screen
+      name="NotificationsTab"
+      component={NotificationsScreen}
+      options={({ route }) => ({
+        title: 'Notifications',
+        tabBarLabel: 'Alerts',
+        tabBarIcon: ({ color, size }) => <Feather name="bell" size={size} color={color} />,
+        tabBarBadge: route.params?.unreadCount > 0 ? route.params.unreadCount : undefined,
+        tabBarBadgeStyle: {
+          backgroundColor: '#DC143C',
+          color: '#fff',
+          fontSize: 10,
+        },
+      })}
+    />
+    <Tab.Screen
       name="ProfileTab"
       component={ProfileScreen}
       options={{
@@ -127,7 +143,7 @@ const MemberStack = () => (
 const WorkerTabs = () => (
   <Tab.Navigator
     screenOptions={{
-      headerShown: true,
+      headerShown: false,
       tabBarActiveTintColor: '#1d1d1b',
       tabBarInactiveTintColor: '#949089',
       tabBarStyle: {
@@ -148,6 +164,21 @@ const WorkerTabs = () => (
         tabBarLabel: 'Tasks',
         tabBarIcon: ({ color, size }) => <Feather name="tool" size={size} color={color} />,
       }}
+    />
+    <Tab.Screen
+      name="NotificationsTab"
+      component={NotificationsScreen}
+      options={({ route }) => ({
+        title: 'Notifications',
+        tabBarLabel: 'Alerts',
+        tabBarIcon: ({ color, size }) => <Feather name="bell" size={size} color={color} />,
+        tabBarBadge: route.params?.unreadCount > 0 ? route.params.unreadCount : undefined,
+        tabBarBadgeStyle: {
+          backgroundColor: '#DC143C',
+          color: '#fff',
+          fontSize: 10,
+        },
+      })}
     />
     <Tab.Screen
       name="ProfileTab"
@@ -183,7 +214,7 @@ const WorkerStack = () => (
 const ManagerTabs = () => (
   <Tab.Navigator
     screenOptions={{
-      headerShown: true,
+      headerShown: false,
       tabBarActiveTintColor: '#1d1d1b',
       tabBarInactiveTintColor: '#949089',
       tabBarStyle: {
@@ -213,6 +244,21 @@ const ManagerTabs = () => (
         tabBarLabel: 'Workers',
         tabBarIcon: ({ color, size }) => <Feather name="users" size={size} color={color} />,
       }}
+    />
+    <Tab.Screen
+      name="NotificationsTab"
+      component={NotificationsScreen}
+      options={({ route }) => ({
+        title: 'Notifications',
+        tabBarLabel: 'Alerts',
+        tabBarIcon: ({ color, size }) => <Feather name="bell" size={size} color={color} />,
+        tabBarBadge: route.params?.unreadCount > 0 ? route.params.unreadCount : undefined,
+        tabBarBadgeStyle: {
+          backgroundColor: '#DC143C',
+          color: '#fff',
+          fontSize: 10,
+        },
+      })}
     />
     <Tab.Screen
       name="ProfileTab"
@@ -268,7 +314,7 @@ const ManagerStack = () => (
 const AdminTabs = () => (
   <Tab.Navigator
     screenOptions={{
-      headerShown: true,
+      headerShown: false,
       tabBarActiveTintColor: '#1d1d1b',
       tabBarInactiveTintColor: '#949089',
       tabBarStyle: {
@@ -289,6 +335,21 @@ const AdminTabs = () => (
         tabBarLabel: 'Users',
         tabBarIcon: ({ color, size }) => <Feather name="settings" size={size} color={color} />,
       }}
+    />
+    <Tab.Screen
+      name="NotificationsTab"
+      component={NotificationsScreen}
+      options={({ route }) => ({
+        title: 'Notifications',
+        tabBarLabel: 'Alerts',
+        tabBarIcon: ({ color, size }) => <Feather name="bell" size={size} color={color} />,
+        tabBarBadge: route.params?.unreadCount > 0 ? route.params.unreadCount : undefined,
+        tabBarBadgeStyle: {
+          backgroundColor: '#DC143C',
+          color: '#fff',
+          fontSize: 10,
+        },
+      })}
     />
     <Tab.Screen
       name="ProfileTab"

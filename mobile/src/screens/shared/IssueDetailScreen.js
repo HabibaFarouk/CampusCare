@@ -142,9 +142,9 @@ const IssueDetailScreen = ({ route, navigation }) => {
       setStatusUpdating(true);
       await issueApi.closeIssue(issueId);
       await loadIssueDetails();
-      Alert.alert('Success', 'Issue resolved');
+      Alert.alert('Success', 'Issue finalized');
     } catch (error) {
-      Alert.alert('Error', 'Failed to resolve issue');
+      Alert.alert('Error', 'Failed to finalize issue');
     } finally {
       setStatusUpdating(false);
     }
@@ -278,10 +278,10 @@ const IssueDetailScreen = ({ route, navigation }) => {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Manager Actions</Text>
           <Button
-            title="Resolve Issue"
+            title="Finalize Issue"
             onPress={handleResolve}
             size="sm"
-            disabled={issue.status === 'RESOLVED' || statusUpdating}
+            disabled={issue.status !== 'FINISHED' || statusUpdating}
             loading={statusUpdating}
           />
         </View>

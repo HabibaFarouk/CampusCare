@@ -11,8 +11,9 @@ import {
 import IssueCard from '../../components/issues/IssueCard';
 import Dropdown from '../../components/common/Dropdown';
 import managerApi from '../../api/managerApi';
+import { STATUS_LABELS } from '../../utils/constants';
 
-const FILTERS = ['UNRESOLVED', 'SUBMITTED', 'ASSIGNED', 'IN_PROGRESS', 'RESOLVED', 'ALL'];
+const FILTERS = ['UNRESOLVED', 'SUBMITTED', 'ASSIGNED', 'IN_PROGRESS', 'FINISHED', 'FINALIZED', 'ALL'];
 
 const IssueListScreen = ({ navigation }) => {
   const [issues, setIssues] = useState([]);
@@ -38,7 +39,7 @@ const IssueListScreen = ({ navigation }) => {
         const list = Array.isArray(data) ? data : [];
         const filtered =
           filter === 'UNRESOLVED'
-            ? list.filter((issue) => issue.status !== 'RESOLVED')
+            ? list.filter((issue) => issue.status !== 'FINALIZED' && issue.status !== 'RESOLVED')
             : list;
         setIssues(filtered);
         return;
@@ -75,6 +76,11 @@ const IssueListScreen = ({ navigation }) => {
           value={filter}
           options={FILTERS}
           onSelect={setFilter}
+          labelMap={{
+            ...STATUS_LABELS,
+            UNRESOLVED: 'Unresolved',
+            ALL: 'All',
+          }}
         />
       </View>
 

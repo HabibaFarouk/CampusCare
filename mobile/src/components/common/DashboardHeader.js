@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Image, SafeAreaView, Platform, StatusBar } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { colors, spacing, type } from '../../theme';
 import { useAuth } from '../../auth/AuthContext';
@@ -8,7 +8,8 @@ const DashboardHeader = () => {
   const { logout } = useAuth();
 
   return (
-    <View style={styles.header}>
+    <SafeAreaView style={styles.safeArea}>
+      <View style={styles.header}>
       <View style={styles.logoContainer}>
         <Image 
           source={require('../../../assets/Logo.png')} 
@@ -26,17 +27,21 @@ const DashboardHeader = () => {
           <Text style={styles.signOutText}>Sign out</Text>
         </TouchableOpacity>
       </View>
-    </View>
+      </View>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
+  safeArea: {
+    backgroundColor: colors.bg,
+  },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: spacing.lg,
-    paddingTop: spacing.sm,
+    paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 0) + spacing.sm : spacing.sm,
     paddingBottom: spacing.md,
     backgroundColor: colors.bg,
   },

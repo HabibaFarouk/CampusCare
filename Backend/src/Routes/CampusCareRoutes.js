@@ -14,6 +14,13 @@ router.post('/auth/reset-password', controller.resetPassword);
 router.put('/users/me', authenticate, controller.updateMyProfile);
 
 // ==========================================
+// Notifications
+// ==========================================
+router.get('/notifications', authenticate, controller.getNotifications);
+router.put('/notifications/:id/read', authenticate, controller.markNotificationRead);
+router.put('/notifications/read-all', authenticate, controller.markAllNotificationsRead);
+
+// ==========================================
 // 2.1 Community Member Flows
 // ==========================================
 // Members can create issues and view their own

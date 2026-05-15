@@ -70,7 +70,7 @@ const FMDashboard = ({ navigation }) => {
             icon="⏳"
           />
           <KPIWidget
-            label="Resolved"
+            label="Finalized"
             value={kpis.resolvedIssues || 0}
             trend={kpis.resolvedTrend}
             icon="✅"

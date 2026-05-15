@@ -13,6 +13,7 @@ import Button from '../../components/common/Button';
 import Dropdown from '../../components/common/Dropdown';
 import issueApi from '../../api/issueApi';
 import { useNotification } from '../../utils/NotificationContext';
+import { STATUS_LABELS } from '../../utils/constants';
 
 const MyIssuesScreen = ({ navigation }) => {
   const [issues, setIssues] = useState([]);
@@ -73,8 +74,12 @@ const MyIssuesScreen = ({ navigation }) => {
       <View style={styles.filterContainer}>
         <Dropdown
           value={filter}
-          options={['ALL', 'SUBMITTED', 'ASSIGNED', 'IN_PROGRESS', 'RESOLVED']}
+          options={['ALL', 'SUBMITTED', 'ASSIGNED', 'IN_PROGRESS', 'FINISHED', 'FINALIZED']}
           onSelect={setFilter}
+          labelMap={{
+            ...STATUS_LABELS,
+            ALL: 'All',
+          }}
         />
       </View>
 

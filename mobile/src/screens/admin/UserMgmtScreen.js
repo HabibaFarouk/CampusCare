@@ -40,7 +40,8 @@ const UserMgmtScreen = ({ navigation }) => {
       const data = await adminApi.getUsers();
       setUsers(Array.isArray(data) ? data : []);
     } catch (error) {
-      Alert.alert('Error', 'Failed to load users');
+      const message = error.response?.data?.error || error.message || 'Failed to load users';
+      Alert.alert('Error', message);
     } finally {
       setLoading(false);
     }

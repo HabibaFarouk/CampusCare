@@ -2,8 +2,9 @@ import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { colors } from '../../theme';
 
-const Dropdown = ({ label, value, options, onSelect }) => {
+const Dropdown = ({ label, value, options, onSelect, labelMap }) => {
   const [showPicker, setShowPicker] = useState(false);
+  const getLabel = (option) => labelMap?.[option] || option.replace('_', ' ');
 
   return (
     <View style={styles.container}>
@@ -12,7 +13,7 @@ const Dropdown = ({ label, value, options, onSelect }) => {
         style={styles.button}
         onPress={() => setShowPicker(!showPicker)}
       >
-        <Text style={styles.buttonText}>{value.replace('_', ' ')}</Text>
+        <Text style={styles.buttonText}>{getLabel(value)}</Text>
         <Text style={styles.arrow}>▼</Text>
       </TouchableOpacity>
 
@@ -33,7 +34,7 @@ const Dropdown = ({ label, value, options, onSelect }) => {
                   value === opt && styles.optionTextSelected,
                 ]}
               >
-                {opt.replace('_', ' ')}
+                {getLabel(opt)}
               </Text>
             </TouchableOpacity>
           ))}

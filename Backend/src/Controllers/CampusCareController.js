@@ -4,8 +4,18 @@ const bcrypt = require('bcrypt');
 const { tokenBlacklist } = require('../middleware/auth');
 require('dotenv').config();
 
-const VALID_STATUSES = ['SUBMITTED', 'ASSIGNED', 'IN_PROGRESS', 'RESOLVED', 'CANCELLED'];
+const VALID_STATUSES = ['SUBMITTED', 'ASSIGNED', 'IN_PROGRESS', 'FINISHED', 'FINALIZED', 'RESOLVED', 'CANCELLED'];
 const VALID_CATEGORIES = ['MAINTENANCE', 'CLEANLINESS', 'SUSTAINABILITY'];
+
+const STATUS_LABELS = {
+  SUBMITTED: 'Issued',
+  ASSIGNED: 'Assigned',
+  IN_PROGRESS: 'InProgress',
+  FINISHED: 'Finished',
+  FINALIZED: 'Finalized',
+  RESOLVED: 'Finalized',
+  CANCELLED: 'Cancelled',
+};
 
 const createAuditLog = async ({ ticketId, changedById, action, oldValue, newValue }) => {
   try {
@@ -31,6 +41,108 @@ const createNotification = async ({ userId, message }) => {
     });
   } catch (err) {
     console.error('Notification error:', err.message);
+  }
+};
+
+const formatStatusLabel = (status) => {
+  const key = String(status || '').toUpperCase();
+  return STATUS_LABELS[key] || status;
+};
+
+const notifyManagers = async ({ message, excludeUserId }) => {
+  if (!message) return;
+  try {
+    const managers = await prisma.user.findMany({
+      where: { role: 'FACILITY_MANAGER', isActive: true },
+      select: { id: true },
+    });
+    const targets = managers.filter((m) => m.id !== excludeUserId);
+    await Promise.all(
+      targets.map((m) =>
+        createNotification({
+          userId: m.id,
+          message,
+        })
+      )
+    );
+  } catch (err) {
+    console.error('Manager notification error:', err.message);
+  }
+};
+
+const notifyStatusChange = async ({ ticketId, newStatus, changedById, createdById, assignedToId }) => {
+  const statusLabel = formatStatusLabel(newStatus);
+  const message = `Issue #${ticketId} status changed to ${statusLabel}.`;
+  const targets = [createdById, assignedToId].filter(
+    (uid) => uid && uid !== changedById
+  );
+
+  await Promise.all(
+    targets.map((uid) =>
+      createNotification({
+        userId: uid,
+        message,
+      })
+    )
+  );
+
+  await notifyManagers({ message, excludeUserId: changedById });
+};
+
+exports.getNotifications = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const unreadOnly = String(req.query.unreadOnly || '').toLowerCase() === 'true';
+    const where = { userId };
+    if (unreadOnly) {
+      where.isRead = false;
+    }
+
+    const notifications = await prisma.notification.findMany({
+      where,
+      orderBy: { createdAt: 'desc' },
+    });
+
+    return res.status(200).json(notifications);
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
+};
+
+exports.markNotificationRead = async (req, res) => {
+  const id = Number(req.params.id);
+  if (!Number.isInteger(id) || id <= 0) {
+    return res.status(400).json({ error: 'Invalid notification id' });
+  }
+
+  try {
+    const userId = req.user.id;
+    const result = await prisma.notification.updateMany({
+      where: { id, userId },
+      data: { isRead: true },
+    });
+
+    if (result.count === 0) {
+      return res.status(404).json({ error: 'Notification not found' });
+    }
+
+    return res.status(200).json({ message: 'Notification marked as read' });
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
+};
+
+exports.markAllNotificationsRead = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const result = await prisma.notification.updateMany({
+      where: { userId, isRead: false },
+      data: { isRead: true },
+    });
+
+    return res.status(200).json({ message: 'All notifications marked as read', count: result.count });
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
   }
 };
 
@@ -381,14 +493,40 @@ exports.updateIssueStatus = async (req, res) => {
   }
 
   try {
+    const existing = await prisma.ticket.findUnique({
+      where: { id },
+      select: { id: true, status: true, createdById: true, assignedToId: true },
+    });
+    if (!existing) {
+      return res.status(404).json({ error: 'Ticket not found' });
+    }
+
+    const nextStatus = String(status).toUpperCase();
     const updatedTicket = await prisma.ticket.update({
       where: { id },
-      data: { status: String(status).toUpperCase() },
+      data: { status: nextStatus },
       include: {
         createdBy: { select: { name: true } },
         assignedTo: { select: { name: true } },
       },
     });
+
+    await createAuditLog({
+      ticketId: id,
+      changedById: req.user.id,
+      action: 'STATUS_CHANGED',
+      oldValue: existing.status,
+      newValue: nextStatus,
+    });
+
+    await notifyStatusChange({
+      ticketId: id,
+      newStatus: nextStatus,
+      changedById: req.user.id,
+      createdById: existing.createdById,
+      assignedToId: existing.assignedToId,
+    });
+
     return res.status(200).json(updatedTicket);
   } catch (err) {
     if (err.code === 'P2025') {
@@ -520,6 +658,11 @@ exports.assignIssueToWorker = async (req, res) => {
         message: `Your issue #${id} was assigned to a worker.`,
       }),
     ]);
+
+    await notifyManagers({
+      message: `Issue #${id} status changed to ${formatStatusLabel('ASSIGNED')}.`,
+      excludeUserId: req.user.id,
+    });
     return res.status(200).json(updatedTicket);
   } catch (err) {
     if (err.code === 'P2025') {
@@ -536,13 +679,20 @@ exports.closeIssue = async (req, res) => {
   try {
     const existing = await prisma.ticket.findUnique({
       where: { id },
-      select: { id: true, status: true, createdById: true },
+      select: { id: true, status: true, createdById: true, assignedToId: true },
     });
     if (!existing) return res.status(404).json({ error: 'Ticket not found' });
 
+    if (existing.status === 'FINALIZED') {
+      return res.status(400).json({ error: 'Ticket already finalized' });
+    }
+    if (existing.status !== 'FINISHED') {
+      return res.status(400).json({ error: `Cannot finalize ticket when status is ${existing.status}` });
+    }
+
     const updatedTicket = await prisma.ticket.update({
       where: { id },
-      data: { status: 'RESOLVED' },
+      data: { status: 'FINALIZED' },
     });
 
     await createAuditLog({
@@ -550,12 +700,15 @@ exports.closeIssue = async (req, res) => {
       changedById: req.user.id,
       action: 'STATUS_CHANGED',
       oldValue: existing.status,
-      newValue: 'RESOLVED',
+      newValue: 'FINALIZED',
     });
 
-    await createNotification({
-      userId: existing.createdById,
-      message: `Your issue #${id} was resolved.`,
+    await notifyStatusChange({
+      ticketId: id,
+      newStatus: 'FINALIZED',
+      changedById: req.user.id,
+      createdById: existing.createdById,
+      assignedToId: existing.assignedToId,
     });
     return res.status(200).json(updatedTicket);
   } catch (err) {
@@ -615,7 +768,8 @@ exports.startIssue = async (req, res) => {
     }
 
     if (ticket.status === 'IN_PROGRESS') return res.status(400).json({ error: 'Ticket already started' });
-    if (ticket.status === 'RESOLVED') return res.status(400).json({ error: 'Ticket already resolved' });
+    if (ticket.status === 'FINISHED') return res.status(400).json({ error: 'Ticket already finished' });
+    if (ticket.status === 'FINALIZED') return res.status(400).json({ error: 'Ticket already finalized' });
     if (ticket.status !== 'ASSIGNED') {
       return res.status(400).json({ error: `Cannot start ticket when status is ${ticket.status}` });
     }
@@ -642,9 +796,17 @@ exports.startIssue = async (req, res) => {
       newValue: 'IN_PROGRESS',
     });
 
-    await createNotification({
-      userId: ticket.assignedToId,
-      message: `Issue #${id} started.`,
+    const existing = await prisma.ticket.findUnique({
+      where: { id },
+      select: { createdById: true, assignedToId: true },
+    });
+
+    await notifyStatusChange({
+      ticketId: id,
+      newStatus: 'IN_PROGRESS',
+      changedById: req.user.id,
+      createdById: existing?.createdById,
+      assignedToId: existing?.assignedToId,
     });
 
     return res.status(200).json(updatedTicket);
@@ -669,14 +831,15 @@ exports.finishIssue = async (req, res) => {
       return res.status(403).json({ error: 'Not authorized to finish this ticket' });
     }
 
-    if (ticket.status === 'RESOLVED') return res.status(400).json({ error: 'Ticket already resolved' });
+    if (ticket.status === 'FINISHED') return res.status(400).json({ error: 'Ticket already finished' });
+    if (ticket.status === 'FINALIZED') return res.status(400).json({ error: 'Ticket already finalized' });
     if (ticket.status !== 'IN_PROGRESS') {
       return res.status(400).json({ error: `Cannot finish ticket when status is ${ticket.status}` });
     }
 
     const updatedTicket = await prisma.ticket.update({
       where: { id },
-      data: { status: 'RESOLVED' },
+      data: { status: 'FINISHED' },
       select: {
         id: true,
         title: true,
@@ -693,12 +856,20 @@ exports.finishIssue = async (req, res) => {
       changedById: req.user.id,
       action: 'STATUS_CHANGED',
       oldValue: ticket.status,
-      newValue: 'RESOLVED',
+      newValue: 'FINISHED',
     });
 
-    await createNotification({
-      userId: ticket.assignedToId,
-      message: `Issue #${id} finished.`,
+    const existing = await prisma.ticket.findUnique({
+      where: { id },
+      select: { createdById: true, assignedToId: true },
+    });
+
+    await notifyStatusChange({
+      ticketId: id,
+      newStatus: 'FINISHED',
+      changedById: req.user.id,
+      createdById: existing?.createdById,
+      assignedToId: existing?.assignedToId,
     });
 
     return res.status(200).json(updatedTicket);
@@ -882,7 +1053,7 @@ exports.getWorkerDetails = async (req, res) => {
       prisma.ticket.count({
         where: {
           assignedToId: userId,
-          status: 'RESOLVED',
+          status: { in: ['FINISHED', 'FINALIZED'] },
         },
       }),
     ]);
@@ -960,6 +1131,24 @@ exports.getAllUsers = async (req, res) => {
 
     return res.status(200).json(users);
   } catch (error) {
+    if (error.code === 'P2022' || String(error.message || '').includes('phoneNumber')) {
+      try {
+        const users = await prisma.user.findMany({
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            role: true,
+            isActive: true,
+            createdAt: true,
+          },
+          orderBy: { createdAt: 'desc' },
+        });
+        return res.status(200).json(users);
+      } catch (fallbackError) {
+        return res.status(500).json({ error: 'Failed to fetch users' });
+      }
+    }
     return res.status(500).json({ error: 'Failed to fetch users' });
   }
 };
@@ -1011,7 +1200,9 @@ exports.updateUserStatus = async (req, res) => {
 exports.getDashboardKPIs = async (req, res) => {
   try {
     const totalIssues = await prisma.ticket.count();
-    const resolvedIssues = await prisma.ticket.count({ where: { status: 'RESOLVED' } });
+    const resolvedIssues = await prisma.ticket.count({
+      where: { status: { in: ['FINALIZED', 'RESOLVED'] } },
+    });
     const submittedIssues = await prisma.ticket.count({ where: { status: 'SUBMITTED' } });
     const inProgressIssues = await prisma.ticket.count({ where: { status: 'IN_PROGRESS' } });
     const activeWorkers = await prisma.user.count({ where: { role: 'WORKER', isActive: true } });
