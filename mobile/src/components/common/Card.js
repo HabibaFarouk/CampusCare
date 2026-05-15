@@ -42,22 +42,22 @@ const Card = ({
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
+    backgroundColor: '#fcfaf8',
+    borderRadius: 16,
     padding: 16,
     marginVertical: 8,
     marginHorizontal: 0,
   },
   default: {
     borderWidth: 1,
-    borderColor: '#E8E8E8',
+    borderColor: '#e6dac3',
   },
   elevated: {
-    shadowColor: '#000',
+    shadowColor: '#1d1d1b',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
+    elevation: 2,
   },
 });
 

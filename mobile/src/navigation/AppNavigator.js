@@ -14,8 +14,10 @@ import ProfileScreen from '../screens/shared/ProfileScreen';
 import ForgotPasswordScreen from '../screens/shared/ForgotPasswordScreen';
 
 // Member screens
+import MemberDashboardScreen from '../screens/member/MemberDashboardScreen';
 import MyIssuesScreen from '../screens/member/MyIssuesScreen';
 import ReportIssueScreen from '../screens/member/ReportIssueScreen';
+import { Feather } from '@expo/vector-icons';
 
 // Worker screens
 import AssignedTasksScreen from '../screens/worker/AssignedTasksScreen';
@@ -51,22 +53,26 @@ const MemberTabs = () => (
   <Tab.Navigator
     screenOptions={{
       headerShown: true,
-      tabBarActiveTintColor: '#007AFF',
-      tabBarInactiveTintColor: '#999',
+      tabBarActiveTintColor: '#1d1d1b',
+      tabBarInactiveTintColor: '#949089',
       tabBarStyle: {
-        backgroundColor: '#fff',
+        backgroundColor: '#fcfaf8',
         borderTopWidth: 1,
-        borderTopColor: '#e0e0e0',
+        borderTopColor: '#e6dac3',
+        paddingBottom: 5,
+        paddingTop: 5,
+        height: 60,
       },
     }}
   >
     <Tab.Screen
-      name="MyIssuesTab"
-      component={MyIssuesScreen}
+      name="DashboardTab"
+      component={MemberDashboardScreen}
       options={{
-        title: 'My Issues',
-        tabBarLabel: 'Issues',
-        tabBarIcon: ({ color, size }) => <Text style={{ fontSize: size, color }}>📋</Text>,
+        headerShown: false,
+        title: 'Dashboard',
+        tabBarLabel: 'Dashboard',
+        tabBarIcon: ({ color, size }) => <Feather name="grid" size={size} color={color} />,
       }}
     />
     <Tab.Screen
@@ -74,8 +80,17 @@ const MemberTabs = () => (
       component={ReportIssueScreen}
       options={{
         title: 'Report Issue',
-        tabBarLabel: 'Report',
-        tabBarIcon: ({ color, size }) => <Text style={{ fontSize: size, color }}>➕</Text>,
+        tabBarLabel: 'Report Issue',
+        tabBarIcon: ({ color, size }) => <Feather name="plus-circle" size={size} color={color} />,
+      }}
+    />
+    <Tab.Screen
+      name="MyIssuesTab"
+      component={MyIssuesScreen}
+      options={{
+        title: 'My Issues',
+        tabBarLabel: 'My Issues',
+        tabBarIcon: ({ color, size }) => <Feather name="check-square" size={size} color={color} />,
       }}
     />
     <Tab.Screen
@@ -83,8 +98,8 @@ const MemberTabs = () => (
       component={ProfileScreen}
       options={{
         title: 'Profile',
-        tabBarLabel: 'Profile',
-        tabBarIcon: ({ color, size }) => <Text style={{ fontSize: size, color }}>👤</Text>,
+        tabBarLabel: 'Account',
+        tabBarIcon: ({ color, size }) => <Feather name="user" size={size} color={color} />,
       }}
     />
   </Tab.Navigator>
@@ -113,12 +128,15 @@ const WorkerTabs = () => (
   <Tab.Navigator
     screenOptions={{
       headerShown: true,
-      tabBarActiveTintColor: '#007AFF',
-      tabBarInactiveTintColor: '#999',
+      tabBarActiveTintColor: '#1d1d1b',
+      tabBarInactiveTintColor: '#949089',
       tabBarStyle: {
-        backgroundColor: '#fff',
+        backgroundColor: '#fcfaf8',
         borderTopWidth: 1,
-        borderTopColor: '#e0e0e0',
+        borderTopColor: '#e6dac3',
+        paddingBottom: 5,
+        paddingTop: 5,
+        height: 60,
       },
     }}
   >
@@ -128,7 +146,7 @@ const WorkerTabs = () => (
       options={{
         title: 'Assigned Tasks',
         tabBarLabel: 'Tasks',
-        tabBarIcon: ({ color, size }) => <Text style={{ fontSize: size, color }}>🔧</Text>,
+        tabBarIcon: ({ color, size }) => <Feather name="tool" size={size} color={color} />,
       }}
     />
     <Tab.Screen
@@ -137,7 +155,7 @@ const WorkerTabs = () => (
       options={{
         title: 'Profile',
         tabBarLabel: 'Profile',
-        tabBarIcon: ({ color, size }) => <Text style={{ fontSize: size, color }}>👤</Text>,
+        tabBarIcon: ({ color, size }) => <Feather name="user" size={size} color={color} />,
       }}
     />
   </Tab.Navigator>
@@ -166,12 +184,15 @@ const ManagerTabs = () => (
   <Tab.Navigator
     screenOptions={{
       headerShown: true,
-      tabBarActiveTintColor: '#007AFF',
-      tabBarInactiveTintColor: '#999',
+      tabBarActiveTintColor: '#1d1d1b',
+      tabBarInactiveTintColor: '#949089',
       tabBarStyle: {
-        backgroundColor: '#fff',
+        backgroundColor: '#fcfaf8',
         borderTopWidth: 1,
-        borderTopColor: '#e0e0e0',
+        borderTopColor: '#e6dac3',
+        paddingBottom: 5,
+        paddingTop: 5,
+        height: 60,
       },
     }}
   >
@@ -181,7 +202,7 @@ const ManagerTabs = () => (
       options={{
         title: 'Dashboard',
         tabBarLabel: 'Dashboard',
-        tabBarIcon: ({ color, size }) => <Text style={{ fontSize: size, color }}>📊</Text>,
+        tabBarIcon: ({ color, size }) => <Feather name="grid" size={size} color={color} />,
       }}
     />
     <Tab.Screen
@@ -190,7 +211,7 @@ const ManagerTabs = () => (
       options={{
         title: 'Worker Management',
         tabBarLabel: 'Workers',
-        tabBarIcon: ({ color, size }) => <Text style={{ fontSize: size, color }}>👷</Text>,
+        tabBarIcon: ({ color, size }) => <Feather name="users" size={size} color={color} />,
       }}
     />
     <Tab.Screen
@@ -199,7 +220,7 @@ const ManagerTabs = () => (
       options={{
         title: 'Profile',
         tabBarLabel: 'Profile',
-        tabBarIcon: ({ color, size }) => <Text style={{ fontSize: size, color }}>👤</Text>,
+        tabBarIcon: ({ color, size }) => <Feather name="user" size={size} color={color} />,
       }}
     />
   </Tab.Navigator>
@@ -248,12 +269,15 @@ const AdminTabs = () => (
   <Tab.Navigator
     screenOptions={{
       headerShown: true,
-      tabBarActiveTintColor: '#007AFF',
-      tabBarInactiveTintColor: '#999',
+      tabBarActiveTintColor: '#1d1d1b',
+      tabBarInactiveTintColor: '#949089',
       tabBarStyle: {
-        backgroundColor: '#fff',
+        backgroundColor: '#fcfaf8',
         borderTopWidth: 1,
-        borderTopColor: '#e0e0e0',
+        borderTopColor: '#e6dac3',
+        paddingBottom: 5,
+        paddingTop: 5,
+        height: 60,
       },
     }}
   >
@@ -263,7 +287,7 @@ const AdminTabs = () => (
       options={{
         title: 'User Management',
         tabBarLabel: 'Users',
-        tabBarIcon: ({ color, size }) => <Text style={{ fontSize: size, color }}>👥</Text>,
+        tabBarIcon: ({ color, size }) => <Feather name="settings" size={size} color={color} />,
       }}
     />
     <Tab.Screen
@@ -272,7 +296,7 @@ const AdminTabs = () => (
       options={{
         title: 'Profile',
         tabBarLabel: 'Profile',
-        tabBarIcon: ({ color, size }) => <Text style={{ fontSize: size, color }}>👤</Text>,
+        tabBarIcon: ({ color, size }) => <Feather name="user" size={size} color={color} />,
       }}
     />
   </Tab.Navigator>

@@ -118,7 +118,7 @@ const MyIssuesScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#f6f1ec',
   },
   centerContainer: {
     flex: 1,
@@ -127,16 +127,16 @@ const styles = StyleSheet.create({
   },
   filterContainer: {
     padding: 12,
-    backgroundColor: '#fff',
+    backgroundColor: '#fcfaf8',
     borderBottomWidth: 1,
-    borderBottomColor: '#E8E8E8',
+    borderBottomColor: '#e6dac3',
   },
   filterContent: {
     paddingRight: 8,
   },
   filterButton: {
     marginRight: 8,
-    minWidth: 110,
+    paddingHorizontal: 20,
   },
   list: {
     padding: 12,
@@ -149,14 +149,14 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 16,
-    color: '#666',
+    color: '#68645e',
     marginBottom: 20,
   },
   fab: {
     padding: 16,
-    backgroundColor: '#fff',
+    backgroundColor: '#fcfaf8',
     borderTopWidth: 1,
-    borderTopColor: '#E8E8E8',
+    borderTopColor: '#e6dac3',
   },
 });
 

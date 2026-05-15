@@ -71,7 +71,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 24,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#f6f1ec',
   },
   centerContainer: {
     flex: 1,
@@ -91,7 +91,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   detailsCard: {
-    backgroundColor: '#fff',
+    backgroundColor: '#fcfaf8',
     borderRadius: 12,
     padding: 16,
     marginBottom: 20,
@@ -99,12 +99,12 @@ const styles = StyleSheet.create({
   name: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#000',
+    color: '#1d1d1b',
     marginBottom: 6,
   },
   email: {
     fontSize: 12,
-    color: '#666',
+    color: '#68645e',
     marginBottom: 12,
   },
   row: {
@@ -114,12 +114,12 @@ const styles = StyleSheet.create({
   },
   label: {
     fontSize: 13,
-    color: '#666',
+    color: '#68645e',
   },
   value: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#000',
+    color: '#1d1d1b',
   },
 });
 

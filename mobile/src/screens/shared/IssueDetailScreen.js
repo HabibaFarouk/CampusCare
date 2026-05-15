@@ -329,7 +329,7 @@ const IssueDetailScreen = ({ route, navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#f6f1ec',
   },
   centerContainer: {
     flex: 1,
@@ -337,29 +337,29 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   header: {
-    backgroundColor: '#fff',
+    backgroundColor: '#fcfaf8',
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#E8E8E8',
+    borderBottomColor: '#e6dac3',
   },
   title: {
     fontSize: 24,
     fontWeight: '700',
-    color: '#000',
+    color: '#1d1d1b',
     marginBottom: 12,
   },
   section: {
-    backgroundColor: '#fff',
+    backgroundColor: '#fcfaf8',
     marginVertical: 8,
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#E8E8E8',
+    borderBottomColor: '#e6dac3',
   },
   sectionTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#000',
+    color: '#1d1d1b',
     marginBottom: 8,
   },
   row: {
@@ -369,12 +369,12 @@ const styles = StyleSheet.create({
   },
   label: {
     fontSize: 14,
-    color: '#666',
+    color: '#68645e',
     fontWeight: '500',
   },
   value: {
     fontSize: 14,
-    color: '#000',
+    color: '#1d1d1b',
     fontWeight: '600',
   },
   description: {
@@ -400,7 +400,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingVertical: 10,
     borderBottomWidth: 1,
-    borderBottomColor: '#E8E8E8',
+    borderBottomColor: '#e6dac3',
   },
   workerInfo: {
     flex: 1,
@@ -409,15 +409,15 @@ const styles = StyleSheet.create({
   workerName: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#000',
+    color: '#1d1d1b',
   },
   workerEmail: {
     fontSize: 12,
-    color: '#666',
+    color: '#68645e',
   },
   emptyText: {
     fontSize: 14,
-    color: '#999',
+    color: '#949089',
     fontStyle: 'italic',
   },
 });

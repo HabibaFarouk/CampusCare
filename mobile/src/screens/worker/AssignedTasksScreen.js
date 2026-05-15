@@ -86,7 +86,7 @@ const AssignedTasksScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#f6f1ec',
   },
   centerContainer: {
     flex: 1,
@@ -96,9 +96,9 @@ const styles = StyleSheet.create({
   filterContainer: {
     flexDirection: 'row',
     padding: 12,
-    backgroundColor: '#fff',
+    backgroundColor: '#fcfaf8',
     borderBottomWidth: 1,
-    borderBottomColor: '#E8E8E8',
+    borderBottomColor: '#e6dac3',
   },
   filterButton: {
     marginHorizontal: 4,
@@ -114,7 +114,7 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 16,
-    color: '#666',
+    color: '#68645e',
   },
 });
 

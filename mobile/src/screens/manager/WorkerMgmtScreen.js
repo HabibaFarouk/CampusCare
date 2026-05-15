@@ -100,7 +100,7 @@ const WorkerMgmtScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#f6f1ec',
   },
   centerContainer: {
     flex: 1,
@@ -108,19 +108,19 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   header: {
-    backgroundColor: '#fff',
+    backgroundColor: '#fcfaf8',
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#E8E8E8',
+    borderBottomColor: '#e6dac3',
   },
   title: {
     fontSize: 20,
     fontWeight: '700',
-    color: '#000',
+    color: '#1d1d1b',
   },
   subtitle: {
     fontSize: 14,
-    color: '#666',
+    color: '#68645e',
     marginTop: 4,
   },
   list: {
@@ -133,13 +133,13 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 16,
-    color: '#666',
+    color: '#68645e',
   },
   fab: {
     padding: 16,
-    backgroundColor: '#fff',
+    backgroundColor: '#fcfaf8',
     borderTopWidth: 1,
-    borderTopColor: '#E8E8E8',
+    borderTopColor: '#e6dac3',
   },
 });
 

@@ -111,7 +111,7 @@ const FMDashboard = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#f6f1ec',
   },
   centerContainer: {
     flex: 1,
@@ -119,13 +119,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   header: {
-    backgroundColor: '#007AFF',
+    backgroundColor: '#e6dac3',
     padding: 20,
   },
   title: {
     fontSize: 24,
     fontWeight: '700',
-    color: '#fff',
+    color: '#1d1d1b',
   },
   kpiGrid: {
     flexDirection: 'row',
