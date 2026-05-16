@@ -1013,14 +1013,11 @@ exports.addComment = async (req, res) => {
     });
 
     if (!ticket) return res.status(404).json({ error: 'Ticket not found' });
-    if (role !== 'ADMIN' && ticket.assignedToId !== req.user.id) {
+    if (role !== 'ADMIN' && role !== 'FACILITY_MANAGER' && ticket.assignedToId !== req.user.id) {
       return res.status(403).json({ error: 'Not authorized to comment on this ticket' });
     }
 
-    const workerIdForComment = role === 'ADMIN' ? ticket.assignedToId || req.user.id : req.user.id;
-    if (!workerIdForComment) {
-      return res.status(400).json({ error: 'Ticket has no assignee; assign a worker first' });
-    }
+    const workerIdForComment = req.user.id;
 
     const comment = await prisma.comment.create({
       data: {
