@@ -7,26 +7,26 @@
 *   **URL:** `/auth/register`
 *   **Auth Role:** None
 *   **Sample Request Body:**
-    ```json
+    ```jsonc
     {
-      "name": "John Doe",
-      "email": "johndoe@example.com",
-      "password": "securepassword123",
-      "role": "MEMBER",
-      "phoneNumber": "1234567890"
+      "name": "John Doe",             // String
+      "email": "johndoe@example.com", // String
+      "password": "securepassword123",// String
+      "role": "MEMBER",               // String (Enum: 'MEMBER', 'FACILITY_MANAGER', 'WORKER', 'ADMIN')
+      "phoneNumber": "1234567890"     // String (Optional)
     }
     ```
 *   **Sample Success Response (201 Created):**
-    ```json
+    ```jsonc
     {
-      "message": "Registration successful",
-      "accessToken": "eyJhbGciOiJIUzI1NiIsInR...",
+      "message": "Registration successful",   // String
+      "accessToken": "eyJhbGciOiJIUzI1Ni...", // String
       "user": {
-        "id": 1,
-        "name": "John Doe",
-        "email": "johndoe@example.com",
-        "role": "MEMBER",
-        "phoneNumber": "1234567890"
+        "id": 1,                              // Integer
+        "name": "John Doe",                   // String
+        "email": "johndoe@example.com",       // String
+        "role": "MEMBER",                     // String
+        "phoneNumber": "1234567890"           // String
       }
     }
     ```
@@ -40,21 +40,21 @@
 *   **URL:** `/auth/login`
 *   **Auth Role:** None
 *   **Sample Request Body:**
-    ```json
+    ```jsonc
     {
-      "email": "habiba@gmail.com",
-      "password": "Beno@2006"
+      "email": "habiba@gmail.com", // String
+      "password": "Beno@2006"      // String
     }
     ```
 *   **Sample Success Response (200 OK):**
-    ```json
+    ```jsonc
     {
-      "accessToken": "eyJhbGciOiJIUzI1NiIsInR...",
+      "accessToken": "eyJhbGciOiJIUzI1Ni...", // String
       "user": {
-        "id": 2,
-        "name": "Habiba",
-        "email": "habiba@gmail.com",
-        "role": "MEMBER"
+        "id": 2,                              // Integer
+        "name": "Habiba",                     // String
+        "email": "habiba@gmail.com",          // String
+        "role": "MEMBER"                      // String
       }
     }
     ```
@@ -70,9 +70,9 @@
 *   **Auth Role:** Any Authenticated User
 *   **Sample Request Body:** None
 *   **Sample Success Response (200 OK):**
-    ```json
+    ```jsonc
     {
-      "message": "Logged out successfully"
+      "message": "Logged out successfully" // String
     }
     ```
 *   **Sample Error Responses:**
@@ -83,16 +83,16 @@
 *   **URL:** `/auth/forgot-password`
 *   **Auth Role:** None
 *   **Sample Request Body:**
-    ```json
+    ```jsonc
     {
-      "email": "habiba@gmail.com"
+      "email": "habiba@gmail.com" // String
     }
     ```
 *   **Sample Success Response (200 OK):**
-    ```json
+    ```jsonc
     {
-      "message": "Password reset token generated",
-      "resetToken": "eyJhbGciOiJIUzI1NiIsInR..."
+      "message": "Password reset token generated", // String
+      "resetToken": "eyJhbGciOiJIUzI1Ni..."        // String
     }
     ```
 *   **Sample Error Responses:**
@@ -104,16 +104,16 @@
 *   **URL:** `/auth/reset-password`
 *   **Auth Role:** None
 *   **Sample Request Body:**
-    ```json
+    ```jsonc
     {
-      "token": "eyJhbGciOiJIUzI1NiIsInR...",
-      "newPassword": "newsecurepassword123"
+      "token": "eyJhbGciOiJIUzI1Ni...",          // String
+      "newPassword": "newsecurepassword123"      // String
     }
     ```
 *   **Sample Success Response (200 OK):**
-    ```json
+    ```jsonc
     {
-      "message": "Password has been reset successfully"
+      "message": "Password has been reset successfully" // String
     }
     ```
 *   **Sample Error Responses:**
@@ -125,21 +125,21 @@
 *   **URL:** `/users/me`
 *   **Auth Role:** Any Authenticated User
 *   **Sample Request Body:**
-    ```json
+    ```jsonc
     {
-      "name": "Habiba Updated",
-      "email": "habiba_new@gmail.com"
+      "name": "Habiba Updated",       // String (Optional)
+      "email": "habiba_new@gmail.com" // String (Optional)
     }
     ```
 *   **Sample Success Response (200 OK):**
-    ```json
+    ```jsonc
     {
       "user": {
-        "id": 2,
-        "name": "Habiba Updated",
-        "email": "habiba_new@gmail.com",
-        "role": "MEMBER",
-        "isActive": true
+        "id": 2,                         // Integer
+        "name": "Habiba Updated",        // String
+        "email": "habiba_new@gmail.com", // String
+        "role": "MEMBER",                // String
+        "isActive": true                 // Boolean
       }
     }
     ```
@@ -154,18 +154,18 @@
 
 ### Get Notifications
 *   **Method:** `GET`
-*   **URL:** `/notifications` (Supports `?unreadOnly=true`)
+*   **URL:** `/notifications` (Supports Query Parameter: `?unreadOnly=true` (Boolean))
 *   **Auth Role:** Any Authenticated User
 *   **Sample Request Body:** None
 *   **Sample Success Response (200 OK):**
-    ```json
+    ```jsonc
     [
       {
-        "id": 1,
-        "userId": 2,
-        "message": "New issue submitted: Broken pipe",
-        "isRead": false,
-        "createdAt": "2026-05-15T10:00:00.000Z"
+        "id": 1,                                    // Integer
+        "userId": 2,                                // Integer
+        "message": "New issue submitted: Broken pipe",// String
+        "isRead": false,                            // Boolean
+        "createdAt": "2026-05-15T10:00:00.000Z"     // DateTime (String)
       }
     ]
     ```
@@ -175,12 +175,13 @@
 ### Mark Notification Read
 *   **Method:** `PUT`
 *   **URL:** `/notifications/:id/read`
+*   **Path Parameters:** `id` (Integer) - ID of the notification
 *   **Auth Role:** Any Authenticated User
 *   **Sample Request Body:** None
 *   **Sample Success Response (200 OK):**
-    ```json
+    ```jsonc
     {
-      "message": "Notification marked as read"
+      "message": "Notification marked as read" // String
     }
     ```
 *   **Sample Error Responses:**
@@ -194,10 +195,10 @@
 *   **Auth Role:** Any Authenticated User
 *   **Sample Request Body:** None
 *   **Sample Success Response (200 OK):**
-    ```json
+    ```jsonc
     {
-      "message": "All notifications marked as read",
-      "count": 3
+      "message": "All notifications marked as read", // String
+      "count": 3                                     // Integer
     }
     ```
 *   **Sample Error Responses:**
@@ -212,31 +213,31 @@
 *   **URL:** `/issues`
 *   **Auth Role:** `MEMBER`, `ADMIN`
 *   **Sample Request Body:**
-    ```json
+    ```jsonc
     {
-      "title": "Broken AC",
-      "description": "AC in room 101 is not cooling.",
-      "category": "MAINTENANCE",
-      "location": "Room 101",
-      "imageUrl": "https://example.com/image.jpg"
+      "title": "Broken AC",                         // String
+      "description": "AC in room 101 is not cooling.",// String
+      "category": "MAINTENANCE",                    // String (Enum: 'MAINTENANCE', 'CLEANLINESS', 'SUSTAINABILITY')
+      "location": "Room 101",                       // String
+      "imageUrl": "https://example.com/image.jpg"   // String (Optional)
     }
     ```
 *   **Sample Success Response (201 Created):**
-    ```json
+    ```jsonc
     {
-      "id": 1,
-      "title": "Broken AC",
-      "description": "AC in room 101 is not cooling.",
-      "status": "SUBMITTED",
-      "category": "MAINTENANCE",
-      "location": "Room 101",
-      "imageUrl": "https://example.com/image.jpg",
-      "createdById": 2,
-      "createdAt": "2026-05-15T10:00:00.000Z",
+      "id": 1,                                      // Integer
+      "title": "Broken AC",                         // String
+      "description": "AC in room 101 is not cooling.",// String
+      "status": "SUBMITTED",                        // String
+      "category": "MAINTENANCE",                    // String
+      "location": "Room 101",                       // String
+      "imageUrl": "https://example.com/image.jpg",  // String | Null
+      "createdById": 2,                             // Integer
+      "createdAt": "2026-05-15T10:00:00.000Z",      // DateTime (String)
       "createdBy": {
-        "id": 2,
-        "name": "Habiba",
-        "email": "habiba@gmail.com"
+        "id": 2,                                    // Integer
+        "name": "Habiba",                           // String
+        "email": "habiba@gmail.com"                 // String
       }
     }
     ```
@@ -247,20 +248,20 @@
 
 ### Get My Issues
 *   **Method:** `GET`
-*   **URL:** `/issues/my` (Supports `?status=SUBMITTED`)
+*   **URL:** `/issues/my` (Supports Query Parameter: `?status=SUBMITTED` (String Enum))
 *   **Auth Role:** `MEMBER`, `ADMIN`
 *   **Sample Request Body:** None
 *   **Sample Success Response (200 OK):**
-    ```json
+    ```jsonc
     [
       {
-        "id": 1,
-        "title": "Broken AC",
-        "status": "SUBMITTED",
-        "category": "MAINTENANCE",
-        "location": "Room 101",
-        "assignedTo": null,
-        "createdAt": "2026-05-15T10:00:00.000Z"
+        "id": 1,                                  // Integer
+        "title": "Broken AC",                     // String
+        "status": "SUBMITTED",                    // String
+        "category": "MAINTENANCE",                // String
+        "location": "Room 101",                   // String
+        "assignedTo": null,                       // Object | Null
+        "createdAt": "2026-05-15T10:00:00.000Z"   // DateTime (String)
       }
     ]
     ```
@@ -271,27 +272,28 @@
 ### Update My Issue
 *   **Method:** `PUT`
 *   **URL:** `/issues/:id/member`
+*   **Path Parameters:** `id` (Integer) - ID of the issue
 *   **Auth Role:** `MEMBER`, `ADMIN`
 *   **Note:** Only possible if status is `SUBMITTED` and ticket is unassigned.
 *   **Sample Request Body:**
-    ```json
+    ```jsonc
     {
-      "title": "Broken AC Updated",
-      "location": "Room 102"
+      "title": "Broken AC Updated", // String (Optional)
+      "location": "Room 102"        // String (Optional)
     }
     ```
 *   **Sample Success Response (200 OK):**
-    ```json
+    ```jsonc
     {
-      "id": 1,
-      "title": "Broken AC Updated",
-      "description": "AC in room 101 is not cooling.",
-      "location": "Room 102",
-      "status": "SUBMITTED",
+      "id": 1,                                        // Integer
+      "title": "Broken AC Updated",                   // String
+      "description": "AC in room 101 is not cooling.",// String
+      "location": "Room 102",                         // String
+      "status": "SUBMITTED",                          // String
       "createdBy": {
-        "id": 2,
-        "name": "Habiba",
-        "email": "habiba@gmail.com"
+        "id": 2,                                      // Integer
+        "name": "Habiba",                             // String
+        "email": "habiba@gmail.com"                   // String
       }
     }
     ```
@@ -304,13 +306,14 @@
 ### Delete My Issue
 *   **Method:** `DELETE`
 *   **URL:** `/issues/:id/member`
+*   **Path Parameters:** `id` (Integer) - ID of the issue
 *   **Auth Role:** `MEMBER`, `ADMIN`
 *   **Note:** Only possible if status is `SUBMITTED` and ticket is unassigned.
 *   **Sample Request Body:** None
 *   **Sample Success Response (200 OK):**
-    ```json
+    ```jsonc
     {
-      "message": "Issue deleted"
+      "message": "Issue deleted" // String
     }
     ```
 *   **Sample Error Responses:**
@@ -322,27 +325,28 @@
 ### Get Issue Status (Two Routes)
 *   **Method:** `GET`
 *   **URL:** `/issues/:id/status`  OR  `/api/issues/:id`
+*   **Path Parameters:** `id` (Integer) - ID of the issue
 *   **Auth Role:** Any Authenticated User (Authorization logic inside controller)
 *   **Sample Request Body:** None
 *   **Sample Success Response (200 OK):**
-    ```json
+    ```jsonc
     {
-      "id": 1,
-      "title": "Broken AC Updated",
-      "description": "AC in room 101 is not cooling.",
-      "location": "Room 102",
-      "status": "ASSIGNED",
-      "category": "MAINTENANCE",
-      "imageUrl": "https://example.com/image.jpg",
-      "completionPhotoUrl": null,
-      "createdById": 2,
-      "assignedToId": 3,
-      "createdAt": "2026-05-15T10:00:00.000Z",
-      "updatedAt": "2026-05-15T11:00:00.000Z",
+      "id": 1,                                        // Integer
+      "title": "Broken AC Updated",                   // String
+      "description": "AC in room 101 is not cooling.",// String
+      "location": "Room 102",                         // String
+      "status": "ASSIGNED",                           // String
+      "category": "MAINTENANCE",                      // String
+      "imageUrl": "https://example.com/image.jpg",    // String | Null
+      "completionPhotoUrl": null,                     // String | Null
+      "createdById": 2,                               // Integer
+      "assignedToId": 3,                              // Integer | Null
+      "createdAt": "2026-05-15T10:00:00.000Z",        // DateTime (String)
+      "updatedAt": "2026-05-15T11:00:00.000Z",        // DateTime (String)
       "assignedTo": {
-        "id": 3,
-        "name": "Ahmed",
-        "email": "ahmeds@gmail.com"
+        "id": 3,                                      // Integer
+        "name": "Ahmed",                              // String
+        "email": "ahmeds@gmail.com"                   // String
       }
     }
     ```
@@ -358,21 +362,30 @@
 
 ### Get All Issues
 *   **Method:** `GET`
-*   **URL:** `/issues` (Supports `?status=...&category=...&assignedToId=...&startDate=...&endDate=...`)
+*   **URL:** `/issues`
+*   **Query Parameters:**
+    *   `status` (String Enum - Optional)
+    *   `category` (String Enum - Optional)
+    *   `assignedToId` (Integer or "unassigned" - Optional)
+    *   `startDate` (DateTime String - Optional)
+    *   `endDate` (DateTime String - Optional)
 *   **Auth Role:** `FACILITY_MANAGER`, `ADMIN`
 *   **Sample Request Body:** None
 *   **Sample Success Response (200 OK):**
-    ```json
+    ```jsonc
     [
       {
-        "id": 1,
-        "title": "Broken AC Updated",
-        "status": "SUBMITTED",
-        "category": "MAINTENANCE",
-        "location": "Room 102",
-        "createdBy": { "name": "Habiba", "email": "habiba@gmail.com" },
-        "assignedTo": null,
-        "createdAt": "2026-05-15T10:00:00.000Z"
+        "id": 1,                                  // Integer
+        "title": "Broken AC Updated",             // String
+        "status": "SUBMITTED",                    // String
+        "category": "MAINTENANCE",                // String
+        "location": "Room 102",                   // String
+        "createdBy": { 
+          "name": "Habiba",                       // String
+          "email": "habiba@gmail.com"             // String
+        },
+        "assignedTo": null,                       // Object | Null
+        "createdAt": "2026-05-15T10:00:00.000Z"   // DateTime (String)
       }
     ]
     ```
@@ -386,14 +399,17 @@
 *   **Auth Role:** `FACILITY_MANAGER`, `ADMIN`
 *   **Sample Request Body:** None
 *   **Sample Success Response (200 OK):**
-    ```json
+    ```jsonc
     [
       {
-        "id": 1,
-        "title": "Broken AC Updated",
-        "status": "SUBMITTED",
-        "createdBy": { "name": "Habiba", "email": "habiba@gmail.com" },
-        "createdAt": "2026-05-15T10:00:00.000Z"
+        "id": 1,                                  // Integer
+        "title": "Broken AC Updated",             // String
+        "status": "SUBMITTED",                    // String
+        "createdBy": { 
+          "name": "Habiba",                       // String
+          "email": "habiba@gmail.com"             // String
+        },
+        "createdAt": "2026-05-15T10:00:00.000Z"   // DateTime (String)
       }
     ]
     ```
@@ -403,21 +419,25 @@
 ### Assign Issue to Worker
 *   **Method:** `PUT`
 *   **URL:** `/issues/:id/assign`
+*   **Path Parameters:** `id` (Integer) - ID of the issue
 *   **Auth Role:** `FACILITY_MANAGER`, `ADMIN`
 *   **Sample Request Body:**
-    ```json
+    ```jsonc
     {
-      "workerId": 3
+      "workerId": 3 // Integer
     }
     ```
 *   **Sample Success Response (200 OK):**
-    ```json
+    ```jsonc
     {
-      "id": 1,
-      "status": "ASSIGNED",
-      "assignedToId": 3,
-      "createdBy": { "name": "Habiba" },
-      "assignedTo": { "name": "Ahmed", "email": "ahmeds@gmail.com" }
+      "id": 1,                                        // Integer
+      "status": "ASSIGNED",                           // String
+      "assignedToId": 3,                              // Integer
+      "createdBy": { "name": "Habiba" },              // Object
+      "assignedTo": { 
+        "name": "Ahmed",                              // String
+        "email": "ahmeds@gmail.com"                   // String
+      }
     }
     ```
 *   **Sample Error Responses:**
@@ -428,20 +448,21 @@
 ### Update Issue Status
 *   **Method:** `PUT`
 *   **URL:** `/issues/:id/status`
+*   **Path Parameters:** `id` (Integer) - ID of the issue
 *   **Auth Role:** `FACILITY_MANAGER`, `WORKER`, `ADMIN`
 *   **Sample Request Body:**
-    ```json
+    ```jsonc
     {
-      "status": "RESOLVED"
+      "status": "RESOLVED" // String (Enum: 'SUBMITTED', 'ASSIGNED', 'IN_PROGRESS', 'FINISHED', 'FINALIZED', 'RESOLVED', 'CANCELLED')
     }
     ```
 *   **Sample Success Response (200 OK):**
-    ```json
+    ```jsonc
     {
-      "id": 1,
-      "status": "RESOLVED",
-      "createdBy": { "name": "Habiba" },
-      "assignedTo": { "name": "Ahmed" }
+      "id": 1,                                        // Integer
+      "status": "RESOLVED",                           // String
+      "createdBy": { "name": "Habiba" },              // Object
+      "assignedTo": { "name": "Ahmed" }               // Object
     }
     ```
 *   **Sample Error Responses:**
@@ -452,14 +473,15 @@
 ### Close Issue (Finalize)
 *   **Method:** `PUT`
 *   **URL:** `/issues/:id/close`
+*   **Path Parameters:** `id` (Integer) - ID of the issue
 *   **Auth Role:** `FACILITY_MANAGER`, `ADMIN`
 *   **Note:** Ticket must be in `FINISHED` status before it can be closed (FINALIZED).
 *   **Sample Request Body:** None
 *   **Sample Success Response (200 OK):**
-    ```json
+    ```jsonc
     {
-      "id": 1,
-      "status": "FINALIZED"
+      "id": 1,               // Integer
+      "status": "FINALIZED"  // String
     }
     ```
 *   **Sample Error Responses:**
@@ -470,12 +492,13 @@
 ### Delete Issue (Manager/Admin override)
 *   **Method:** `DELETE`
 *   **URL:** `/issues/:id`
+*   **Path Parameters:** `id` (Integer) - ID of the issue
 *   **Auth Role:** `FACILITY_MANAGER`, `ADMIN`
 *   **Sample Request Body:** None
 *   **Sample Success Response (200 OK):**
-    ```json
+    ```jsonc
     {
-      "message": "Issue deleted successfully"
+      "message": "Issue deleted successfully" // String
     }
     ```
 *   **Sample Error Responses:**
@@ -493,18 +516,22 @@
 *   **Auth Role:** `WORKER`, `ADMIN`
 *   **Sample Request Body:** None
 *   **Sample Success Response (200 OK):**
-    ```json
+    ```jsonc
     [
       {
-        "id": 1,
-        "title": "Broken AC Updated",
-        "description": "AC in room 101 is not cooling.",
-        "category": "MAINTENANCE",
-        "status": "ASSIGNED",
-        "imageUrl": null,
-        "completionPhotoUrl": null,
-        "createdAt": "2026-05-15T10:00:00.000Z",
-        "assignedTo": { "id": 3, "name": "Ahmed", "email": "ahmeds@gmail.com" }
+        "id": 1,                                        // Integer
+        "title": "Broken AC Updated",                   // String
+        "description": "AC in room 101 is not cooling.",// String
+        "category": "MAINTENANCE",                      // String
+        "status": "ASSIGNED",                           // String
+        "imageUrl": null,                               // String | Null
+        "completionPhotoUrl": null,                     // String | Null
+        "createdAt": "2026-05-15T10:00:00.000Z",        // DateTime (String)
+        "assignedTo": { 
+          "id": 3,                                      // Integer
+          "name": "Ahmed",                              // String
+          "email": "ahmeds@gmail.com"                   // String
+        }
       }
     ]
     ```
@@ -515,18 +542,23 @@
 ### Start Issue
 *   **Method:** `PUT`
 *   **URL:** `/issues/:id/start`
+*   **Path Parameters:** `id` (Integer) - ID of the issue
 *   **Auth Role:** `WORKER`, `ADMIN`
 *   **Sample Request Body:** None
 *   **Sample Success Response (200 OK):**
-    ```json
+    ```jsonc
     {
-      "id": 1,
-      "title": "Broken AC Updated",
-      "description": "AC in room 101 is not cooling.",
-      "category": "MAINTENANCE",
-      "status": "IN_PROGRESS",
-      "createdAt": "2026-05-15T10:00:00.000Z",
-      "assignedTo": { "id": 3, "name": "Ahmed", "email": "ahmeds@gmail.com" }
+      "id": 1,                                        // Integer
+      "title": "Broken AC Updated",                   // String
+      "description": "AC in room 101 is not cooling.",// String
+      "category": "MAINTENANCE",                      // String
+      "status": "IN_PROGRESS",                        // String
+      "createdAt": "2026-05-15T10:00:00.000Z",        // DateTime (String)
+      "assignedTo": { 
+        "id": 3,                                      // Integer
+        "name": "Ahmed",                              // String
+        "email": "ahmeds@gmail.com"                   // String
+      }
     }
     ```
 *   **Sample Error Responses:**
@@ -538,18 +570,23 @@
 ### Finish Issue
 *   **Method:** `PUT`
 *   **URL:** `/issues/:id/finish`
+*   **Path Parameters:** `id` (Integer) - ID of the issue
 *   **Auth Role:** `WORKER`, `ADMIN`
 *   **Sample Request Body:** None
 *   **Sample Success Response (200 OK):**
-    ```json
+    ```jsonc
     {
-      "id": 1,
-      "title": "Broken AC Updated",
-      "description": "AC in room 101 is not cooling.",
-      "category": "MAINTENANCE",
-      "status": "FINISHED",
-      "createdAt": "2026-05-15T10:00:00.000Z",
-      "assignedTo": { "id": 3, "name": "Ahmed", "email": "ahmeds@gmail.com" }
+      "id": 1,                                        // Integer
+      "title": "Broken AC Updated",                   // String
+      "description": "AC in room 101 is not cooling.",// String
+      "category": "MAINTENANCE",                      // String
+      "status": "FINISHED",                           // String
+      "createdAt": "2026-05-15T10:00:00.000Z",        // DateTime (String)
+      "assignedTo": { 
+        "id": 3,                                      // Integer
+        "name": "Ahmed",                              // String
+        "email": "ahmeds@gmail.com"                   // String
+      }
     }
     ```
 *   **Sample Error Responses:**
@@ -561,21 +598,22 @@
 ### Get Issue Comments
 *   **Method:** `GET`
 *   **URL:** `/issues/:id/comments`
+*   **Path Parameters:** `id` (Integer) - ID of the issue
 *   **Auth Role:** Any Authenticated User
 *   **Sample Request Body:** None
 *   **Sample Success Response (200 OK):**
-    ```json
+    ```jsonc
     [
       {
-        "id": 1,
-        "text": "I will start working on this tomorrow.",
-        "ticketId": 1,
-        "workerId": 3,
-        "createdAt": "2026-05-15T12:00:00.000Z",
+        "id": 1,                                      // Integer
+        "text": "I will start working on this tomorrow.",// String
+        "ticketId": 1,                                // Integer
+        "workerId": 3,                                // Integer
+        "createdAt": "2026-05-15T12:00:00.000Z",      // DateTime (String)
         "worker": {
-          "id": 3,
-          "name": "Ahmed",
-          "email": "ahmeds@gmail.com"
+          "id": 3,                                    // Integer
+          "name": "Ahmed",                            // String
+          "email": "ahmeds@gmail.com"                 // String
         }
       }
     ]
@@ -589,21 +627,22 @@
 ### Add Comment
 *   **Method:** `POST`
 *   **URL:** `/issues/:id/comments`
+*   **Path Parameters:** `id` (Integer) - ID of the issue
 *   **Auth Role:** `WORKER`, `FACILITY_MANAGER`, `ADMIN`
 *   **Sample Request Body:**
-    ```json
+    ```jsonc
     {
-      "text": "I will start working on this tomorrow."
+      "text": "I will start working on this tomorrow." // String
     }
     ```
 *   **Sample Success Response (201 Created):**
-    ```json
+    ```jsonc
     {
-      "id": 1,
-      "text": "I will start working on this tomorrow.",
-      "ticketId": 1,
-      "workerId": 3,
-      "createdAt": "2026-05-15T12:00:00.000Z"
+      "id": 1,                                        // Integer
+      "text": "I will start working on this tomorrow.",// String
+      "ticketId": 1,                                  // Integer
+      "workerId": 3,                                  // Integer
+      "createdAt": "2026-05-15T12:00:00.000Z"         // DateTime (String)
     }
     ```
 *   **Sample Error Responses:**
@@ -615,21 +654,26 @@
 ### Upload Completion Photo
 *   **Method:** `POST`
 *   **URL:** `/issues/:id/photo`
+*   **Path Parameters:** `id` (Integer) - ID of the issue
 *   **Auth Role:** `WORKER`, `ADMIN`
 *   **Sample Request Body:**
-    ```json
+    ```jsonc
     {
-      "photoUrl": "https://example.com/completion-photo.jpg"
+      "photoUrl": "https://example.com/completion-photo.jpg" // String
     }
     ```
 *   **Sample Success Response (200 OK):**
-    ```json
+    ```jsonc
     {
-      "id": 1,
-      "title": "Broken AC Updated",
-      "status": "FINISHED",
-      "completionPhotoUrl": "https://example.com/completion-photo.jpg",
-      "assignedTo": { "id": 3, "name": "Ahmed", "email": "ahmeds@gmail.com" }
+      "id": 1,                                                  // Integer
+      "title": "Broken AC Updated",                             // String
+      "status": "FINISHED",                                     // String
+      "completionPhotoUrl": "https://example.com/completion-photo.jpg", // String
+      "assignedTo": { 
+        "id": 3,                                                // Integer
+        "name": "Ahmed",                                        // String
+        "email": "ahmeds@gmail.com"                             // String
+      }
     }
     ```
 *   **Sample Error Responses:**
@@ -648,17 +692,17 @@
 *   **Auth Role:** `FACILITY_MANAGER`, `ADMIN`
 *   **Sample Request Body:** None
 *   **Sample Success Response (200 OK):**
-    ```json
+    ```jsonc
     {
-      "message": "Workers fetched successfully",
+      "message": "Workers fetched successfully",                // String
       "data": [
         {
-          "id": 3,
-          "name": "Ahmed",
-          "email": "ahmeds@gmail.com",
-          "role": "WORKER",
-          "isActive": true,
-          "createdAt": "2026-05-10T08:00:00.000Z"
+          "id": 3,                                              // Integer
+          "name": "Ahmed",                                      // String
+          "email": "ahmeds@gmail.com",                          // String
+          "role": "WORKER",                                     // String
+          "isActive": true,                                     // Boolean
+          "createdAt": "2026-05-10T08:00:00.000Z"               // DateTime (String)
         }
       ]
     }
@@ -669,19 +713,20 @@
 ### Get Worker Details
 *   **Method:** `GET`
 *   **URL:** `/manager/workers/:id`
+*   **Path Parameters:** `id` (Integer) - ID of the worker
 *   **Auth Role:** `FACILITY_MANAGER`, `ADMIN`
 *   **Sample Request Body:** None
 *   **Sample Success Response (200 OK):**
-    ```json
+    ```jsonc
     {
-      "id": 3,
-      "name": "Ahmed",
-      "email": "ahmeds@gmail.com",
-      "role": "WORKER",
-      "isActive": true,
-      "createdAt": "2026-05-10T08:00:00.000Z",
-      "activeTasks": 2,
-      "resolvedTasks": 15
+      "id": 3,                                                  // Integer
+      "name": "Ahmed",                                          // String
+      "email": "ahmeds@gmail.com",                              // String
+      "role": "WORKER",                                         // String
+      "isActive": true,                                         // Boolean
+      "createdAt": "2026-05-10T08:00:00.000Z",                  // DateTime (String)
+      "activeTasks": 2,                                         // Integer
+      "resolvedTasks": 15                                       // Integer
     }
     ```
 *   **Sample Error Responses:**
@@ -692,23 +737,24 @@
 ### Update Worker Status
 *   **Method:** `PUT`
 *   **URL:** `/manager/workers/:id/status`
+*   **Path Parameters:** `id` (Integer) - ID of the worker
 *   **Auth Role:** `FACILITY_MANAGER`, `ADMIN`
 *   **Sample Request Body:**
-    ```json
+    ```jsonc
     {
-      "status": "inactive"
+      "status": "inactive" // String (Enum: 'active', 'inactive')
     }
     ```
 *   **Sample Success Response (200 OK):**
-    ```json
+    ```jsonc
     {
-      "message": "Worker 3 status updated to inactive",
+      "message": "Worker 3 status updated to inactive",         // String
       "data": {
-        "id": 3,
-        "name": "Ahmed",
-        "email": "ahmeds@gmail.com",
-        "role": "WORKER",
-        "isActive": false
+        "id": 3,                                                // Integer
+        "name": "Ahmed",                                        // String
+        "email": "ahmeds@gmail.com",                            // String
+        "role": "WORKER",                                       // String
+        "isActive": false                                       // Boolean
       }
     }
     ```
@@ -723,13 +769,13 @@
 *   **Auth Role:** `FACILITY_MANAGER`, `ADMIN`
 *   **Sample Request Body:** None
 *   **Sample Success Response (200 OK):**
-    ```json
+    ```jsonc
     {
-      "totalIssues": 20,
-      "resolvedIssues": 12,
-      "submittedIssues": 3,
-      "inProgressIssues": 5,
-      "activeWorkers": 4
+      "totalIssues": 20,                                        // Integer
+      "resolvedIssues": 12,                                     // Integer
+      "submittedIssues": 3,                                     // Integer
+      "inProgressIssues": 5,                                    // Integer
+      "activeWorkers": 4                                        // Integer
     }
     ```
 *   **Sample Error Responses:**
@@ -741,12 +787,12 @@
 *   **Auth Role:** `FACILITY_MANAGER`, `ADMIN`
 *   **Sample Request Body:** None
 *   **Sample Success Response (200 OK):**
-    ```json
+    ```jsonc
     [
       {
-        "workerId": 3,
-        "name": "Ahmed",
-        "activeTasksCount": 2
+        "workerId": 3,                                          // Integer
+        "name": "Ahmed",                                        // String
+        "activeTasksCount": 2                                   // Integer
       }
     ]
     ```
@@ -763,16 +809,16 @@
 *   **Auth Role:** `ADMIN`
 *   **Sample Request Body:** None
 *   **Sample Success Response (200 OK):**
-    ```json
+    ```jsonc
     [
       {
-        "id": 1,
-        "name": "Mashy Okay",
-        "email": "mashyokay@gmail.com",
-        "role": "ADMIN",
-        "phoneNumber": "123456",
-        "isActive": true,
-        "createdAt": "2026-05-01T08:00:00.000Z"
+        "id": 1,                                                // Integer
+        "name": "Mashy Okay",                                   // String
+        "email": "mashyokay@gmail.com",                         // String
+        "role": "ADMIN",                                        // String
+        "phoneNumber": "123456",                                // String
+        "isActive": true,                                       // Boolean
+        "createdAt": "2026-05-01T08:00:00.000Z"                 // DateTime (String)
       }
     ]
     ```
@@ -782,23 +828,24 @@
 ### Update User Status
 *   **Method:** `PUT`
 *   **URL:** `/admin/users/:id/status`
+*   **Path Parameters:** `id` (Integer) - ID of the user
 *   **Auth Role:** `ADMIN`
 *   **Sample Request Body:**
-    ```json
+    ```jsonc
     {
-      "isActive": false
+      "isActive": false // Boolean
     }
     ```
 *   **Sample Success Response (200 OK):**
-    ```json
+    ```jsonc
     {
-      "message": "User deactivated successfully",
+      "message": "User deactivated successfully",               // String
       "user": {
-        "id": 2,
-        "name": "Habiba",
-        "email": "habiba@gmail.com",
-        "role": "MEMBER",
-        "isActive": false
+        "id": 2,                                                // Integer
+        "name": "Habiba",                                       // String
+        "email": "habiba@gmail.com",                            // String
+        "role": "MEMBER",                                       // String
+        "isActive": false                                       // Boolean
       }
     }
     ```
@@ -810,21 +857,22 @@
 ### Update User Role
 *   **Method:** `PUT`
 *   **URL:** `/admin/users/:id/role`
+*   **Path Parameters:** `id` (Integer) - ID of the user
 *   **Auth Role:** `ADMIN`
 *   **Sample Request Body:**
-    ```json
+    ```jsonc
     {
-      "role": "FACILITY_MANAGER"
+      "role": "FACILITY_MANAGER" // String (Enum: 'MEMBER', 'FACILITY_MANAGER', 'WORKER', 'ADMIN')
     }
     ```
 *   **Sample Success Response (200 OK):**
-    ```json
+    ```jsonc
     {
-      "message": "Role updated successfully",
+      "message": "Role updated successfully",                   // String
       "user": {
-        "id": 2,
-        "name": "Habiba",
-        "role": "FACILITY_MANAGER"
+        "id": 2,                                                // Integer
+        "name": "Habiba",                                       // String
+        "role": "FACILITY_MANAGER"                              // String
       }
     }
     ```
