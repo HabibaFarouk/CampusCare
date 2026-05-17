@@ -11,6 +11,7 @@ router.post('/auth/login', controller.loginUser);
 router.post('/auth/logout', authenticate, controller.logout);
 router.post('/auth/forgot-password', controller.forgotPassword);
 router.post('/auth/reset-password', controller.resetPassword);
+router.get('/users/me', authenticate, controller.getMyProfile);
 router.put('/users/me', authenticate, controller.updateMyProfile);
 
 // ==========================================

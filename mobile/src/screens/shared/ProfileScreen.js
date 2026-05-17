@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -28,14 +28,39 @@ const ProfileScreen = ({ navigation }) => {
   const { user, logout, updateUser } = useAuth();
   const [name, setName] = useState(user?.name || '');
   const [email, setEmail] = useState(user?.email || '');
-  // Adding dummy state for phone, as it's in the design but not in current user schema
-  const [phone, setPhone] = useState('+20 100 000 0000'); 
+  const [phone, setPhone] = useState(user?.phoneNumber || '');
   const [saving, setSaving] = useState(false);
 
   const roleLabel = ROLE_LABELS[user?.role] || user?.role || 'User';
   const initials = user?.name
     ? user.name.split(' ').map((w) => w[0]).slice(0, 2).join('').toUpperCase()
     : 'U';
+
+  React.useEffect(() => {
+    setName(user?.name || '');
+    setEmail(user?.email || '');
+    setPhone(user?.phoneNumber || '');
+  }, [user]);
+
+  const loadProfile = async () => {
+    if (!user?.id) return;
+
+    try {
+      const currentUser = await userApi.getProfile();
+      if (currentUser) {
+        setName(currentUser.name || '');
+        setEmail(currentUser.email || '');
+        setPhone(currentUser.phoneNumber || '');
+        await updateUser({ ...user, ...currentUser });
+      }
+    } catch (err) {
+      // ignore profile sync failures for now
+    }
+  };
+
+  useEffect(() => {
+    loadProfile();
+  }, [user?.id]);
 
   const handleSignOut = () => {
     Alert.alert('Sign Out', 'Are you sure you want to sign out?', [
@@ -50,6 +75,7 @@ const ProfileScreen = ({ navigation }) => {
       const payload = {
         name: name.trim(),
         email: email.trim(),
+        phoneNumber: phone.trim(),
       };
       const updated = await userApi.updateProfile(payload);
       await updateUser({ ...user, ...updated });

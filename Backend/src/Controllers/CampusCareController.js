@@ -1,4 +1,5 @@
 const prisma = require('../prismaClient');
+const { Prisma } = require('@prisma/client');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcrypt');
 const { tokenBlacklist } = require('../middleware/auth');
@@ -44,6 +45,101 @@ const createNotification = async ({ userId, message }) => {
   }
 };
 
+const hasMissingPhoneFieldError = (error) => {
+  return (
+    error instanceof Prisma.PrismaClientValidationError ||
+    String(error.message || '').includes('Unknown field `phoneNumber`') ||
+    String(error.message || '').includes('Unknown field "phoneNumber"')
+  );
+};
+
+const queryUserByEmailRaw = async (email) => {
+  try {
+    const result = await prisma.$queryRaw`
+      SELECT id, name, email, role, password, "isActive", "phoneNumber"
+      FROM "User"
+      WHERE email = ${email}
+      LIMIT 1
+    `;
+    return Array.isArray(result) ? result[0] : result;
+  } catch (error) {
+    if (String(error.message || '').includes('column "phoneNumber" does not exist')) {
+      const result = await prisma.$queryRaw`
+        SELECT id, name, email, role, password, "isActive"
+        FROM "User"
+        WHERE email = ${email}
+        LIMIT 1
+      `;
+      return Array.isArray(result) ? result[0] : result;
+    }
+    throw error;
+  }
+};
+
+const createUserRaw = async ({ name, email, password, role, phoneNumber }) => {
+  try {
+    const result = await prisma.$queryRaw`
+      INSERT INTO "User" ("name", "email", "password", "role", "phoneNumber")
+      VALUES (${name}, ${email}, ${password}, ${role}, ${phoneNumber})
+      RETURNING id, name, email, role, "phoneNumber"
+    `;
+    return Array.isArray(result) ? result[0] : result;
+  } catch (error) {
+    if (String(error.message || '').includes('column "phoneNumber" does not exist')) {
+      const result = await prisma.$queryRaw`
+        INSERT INTO "User" ("name", "email", "password", "role")
+        VALUES (${name}, ${email}, ${password}, ${role})
+        RETURNING id, name, email, role
+      `;
+      return Array.isArray(result) ? result[0] : result;
+    }
+    throw error;
+  }
+};
+
+const updateUserProfileRaw = async ({ id, name, email, phoneNumber }) => {
+  const assignments = [];
+  if (name !== undefined) assignments.push(Prisma.sql`"name" = ${name}`);
+  if (email !== undefined) assignments.push(Prisma.sql`"email" = ${email}`);
+  if (phoneNumber !== undefined) {
+    assignments.push(
+      Prisma.sql`"phoneNumber" = ${phoneNumber === '' ? null : phoneNumber}`
+    );
+  }
+  if (assignments.length === 0) {
+    return null;
+  }
+
+  const query = Prisma.sql`
+    UPDATE "User"
+    SET ${Prisma.join(assignments, Prisma.sql`, `)}
+    WHERE id = ${id}
+    RETURNING id, name, email, role, "isActive", "phoneNumber"
+  `;
+
+  try {
+    const result = await prisma.$queryRaw(query);
+    return Array.isArray(result) ? result[0] : result;
+  } catch (error) {
+    if (String(error.message || '').includes('column "phoneNumber" does not exist')) {
+      const fields = [];
+      if (name !== undefined) fields.push(Prisma.sql`"name" = ${name}`);
+      if (email !== undefined) fields.push(Prisma.sql`"email" = ${email}`);
+      if (fields.length === 0) return null;
+
+      const fallbackQuery = Prisma.sql`
+        UPDATE "User"
+        SET ${Prisma.join(fields, Prisma.sql`, `)}
+        WHERE id = ${id}
+        RETURNING id, name, email, role, "isActive"
+      `;
+      const result = await prisma.$queryRaw(fallbackQuery);
+      return Array.isArray(result) ? result[0] : result;
+    }
+    throw error;
+  }
+};
+
 const formatStatusLabel = (status) => {
   const key = String(status || '').toUpperCase();
   return STATUS_LABELS[key] || status;
@@ -67,6 +163,27 @@ const notifyManagers = async ({ message, excludeUserId }) => {
     );
   } catch (err) {
     console.error('Manager notification error:', err.message);
+  }
+};
+
+const notifyAdmins = async ({ message, excludeUserId }) => {
+  if (!message) return;
+  try {
+    const admins = await prisma.user.findMany({
+      where: { role: 'ADMIN', isActive: true },
+      select: { id: true },
+    });
+    const targets = admins.filter((m) => m.id !== excludeUserId);
+    await Promise.all(
+      targets.map((m) =>
+        createNotification({
+          userId: m.id,
+          message,
+        })
+      )
+    );
+  } catch (err) {
+    console.error('Admin notification error:', err.message);
   }
 };
 
@@ -197,14 +314,38 @@ exports.registerUser = async (req, res) => {
   try {
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    const newUser = await prisma.user.create({
-      data: {
-        name,
-        email,
-        password: hashedPassword,
-        role,
-        phoneNumber: phoneNumber || null,
-      },
+    let newUser;
+    try {
+      newUser = await prisma.user.create({
+        data: {
+          name,
+          email,
+          password: hashedPassword,
+          role,
+          phoneNumber: phoneNumber || null,
+        },
+      });
+    } catch (createError) {
+      if (hasMissingPhoneFieldError(createError)) {
+        newUser = await createUserRaw({
+          name,
+          email,
+          password: hashedPassword,
+          role,
+          phoneNumber: phoneNumber || null,
+        });
+      } else {
+        throw createError;
+      }
+    }
+
+    if (newUser && newUser.password) {
+      delete newUser.password;
+    }
+
+    await notifyAdmins({
+      message: `New user registered: ${newUser.name} (${newUser.email})`,
+      excludeUserId: newUser.id,
     });
 
     const { accessToken } = generateTokens(newUser);
@@ -212,13 +353,7 @@ exports.registerUser = async (req, res) => {
     return res.status(201).json({
       message: 'Registration successful',
       accessToken,
-      user: {
-        id: newUser.id,
-        name: newUser.name,
-        email: newUser.email,
-        role: newUser.role,
-        phoneNumber: newUser.phoneNumber,
-      },
+      user: newUser,
     });
   } catch (err) {
     if (err.code === 'P2002') {
@@ -236,7 +371,27 @@ exports.loginUser = async (req, res) => {
   }
 
   try {
-    const user = await prisma.user.findUnique({ where: { email } });
+    let user;
+    try {
+      user = await prisma.user.findUnique({
+        where: { email },
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          role: true,
+          phoneNumber: true,
+          password: true,
+          isActive: true,
+        },
+      });
+    } catch (error) {
+      if (hasMissingPhoneFieldError(error)) {
+        user = await queryUserByEmailRaw(email);
+      } else {
+        throw error;
+      }
+    }
 
     if (!user) {
       return res.status(401).json({ error: 'User not found' });
@@ -267,6 +422,7 @@ exports.loginUser = async (req, res) => {
         name: user.name,
         email: user.email,
         role: user.role,
+        phoneNumber: user.phoneNumber || null,
       },
     });
   } catch (err) {
@@ -1433,26 +1589,44 @@ exports.getIssueComments = async (req, res) => {
 };
 
 exports.updateMyProfile = async (req, res) => {
-  const { name, email } = req.body;
-  if (!name && !email) {
+  const { name, email, phoneNumber } = req.body;
+  if (!name && !email && phoneNumber === undefined) {
     return res.status(400).json({ error: 'Nothing to update' });
   }
 
   try {
-    const updatedUser = await prisma.user.update({
-      where: { id: req.user.id },
-      data: {
-        ...(name ? { name: String(name).trim() } : {}),
-        ...(email ? { email: String(email).trim().toLowerCase() } : {}),
-      },
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        role: true,
-        isActive: true,
-      },
-    });
+    let updatedUser;
+    try {
+      updatedUser = await prisma.user.update({
+        where: { id: req.user.id },
+        data: {
+          ...(name ? { name: String(name).trim() } : {}),
+          ...(email ? { email: String(email).trim().toLowerCase() } : {}),
+          ...(phoneNumber !== undefined
+            ? { phoneNumber: phoneNumber === '' ? null : String(phoneNumber).trim() }
+            : {}),
+        },
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          role: true,
+          isActive: true,
+          phoneNumber: true,
+        },
+      });
+    } catch (error) {
+      if (hasMissingPhoneFieldError(error)) {
+        updatedUser = await updateUserProfileRaw({
+          id: req.user.id,
+          name: name !== undefined ? String(name).trim() : undefined,
+          email: email !== undefined ? String(email).trim().toLowerCase() : undefined,
+          phoneNumber: phoneNumber !== undefined ? (phoneNumber === '' ? null : String(phoneNumber).trim()) : undefined,
+        });
+      } else {
+        throw error;
+      }
+    }
 
     return res.status(200).json({ user: updatedUser });
   } catch (error) {
@@ -1460,6 +1634,45 @@ exports.updateMyProfile = async (req, res) => {
       return res.status(409).json({ error: 'Email already in use' });
     }
     return res.status(500).json({ error: 'Failed to update profile' });
+  }
+};
+
+exports.getMyProfile = async (req, res) => {
+  try {
+    let user;
+    try {
+      user = await prisma.user.findUnique({
+        where: { id: req.user.id },
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          role: true,
+          phoneNumber: true,
+          isActive: true,
+        },
+      });
+    } catch (error) {
+      if (hasMissingPhoneFieldError(error)) {
+        const result = await prisma.$queryRaw`
+          SELECT id, name, email, role, "phoneNumber", "isActive"
+          FROM "User"
+          WHERE id = ${req.user.id}
+          LIMIT 1
+        `;
+        user = Array.isArray(result) ? result[0] : result;
+      } else {
+        throw error;
+      }
+    }
+
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    return res.status(200).json({ user });
+  } catch (error) {
+    return res.status(500).json({ error: 'Failed to fetch profile' });
   }
 };
 
