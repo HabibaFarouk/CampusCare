@@ -10,12 +10,8 @@ export const VALID_STATUSES = {
 
 export const VALID_CATEGORIES = {
   MAINTENANCE: 'MAINTENANCE',
-  CLEANING: 'CLEANING',
-  SAFETY: 'SAFETY',
-  LANDSCAPING: 'LANDSCAPING',
-  PLUMBING: 'PLUMBING',
-  ELECTRICAL: 'ELECTRICAL',
-  OTHER: 'OTHER',
+  CLEANLINESS: 'CLEANLINESS',
+  SUSTAINABILITY: 'SUSTAINABILITY',
 };
 
 export const USER_ROLES = {
@@ -47,10 +43,6 @@ export const STATUS_LABELS = {
 
 export const CATEGORY_ICONS = {
   MAINTENANCE: 'wrench',
-  CLEANING: 'broom',
-  SAFETY: 'shield',
-  LANDSCAPING: 'tree',
-  PLUMBING: 'droplet',
-  ELECTRICAL: 'zap',
-  OTHER: 'help-circle',
+  CLEANLINESS: 'broom',
+  SUSTAINABILITY: 'leaf',
 };
