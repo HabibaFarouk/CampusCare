@@ -80,7 +80,7 @@ const createUserRaw = async ({ name, email, password, role, phoneNumber }) => {
   try {
     const result = await prisma.$queryRaw`
       INSERT INTO "User" ("name", "email", "password", "role", "phoneNumber")
-      VALUES (${name}, ${email}, ${password}, ${role}, ${phoneNumber})
+      VALUES (${name}, ${email}, ${password}, CAST(${role} AS "Role"), ${phoneNumber})
       RETURNING id, name, email, role, "phoneNumber"
     `;
     return Array.isArray(result) ? result[0] : result;
@@ -88,7 +88,7 @@ const createUserRaw = async ({ name, email, password, role, phoneNumber }) => {
     if (String(error.message || '').includes('column "phoneNumber" does not exist')) {
       const result = await prisma.$queryRaw`
         INSERT INTO "User" ("name", "email", "password", "role")
-        VALUES (${name}, ${email}, ${password}, ${role})
+        VALUES (${name}, ${email}, ${password}, CAST(${role} AS "Role"))
         RETURNING id, name, email, role
       `;
       return Array.isArray(result) ? result[0] : result;
